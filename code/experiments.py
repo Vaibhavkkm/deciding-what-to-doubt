@@ -67,3 +67,42 @@ def make_station(seed, offset=0.0):
     """Shared weather + a small local deviation + AR(1) sensor noise."""
     r = np.random.default_rng(seed)
     return weather + smoothed_walk(r, 0.4) + ar1(r) + offset
+
+x_true = make_station(12)
+x = x_true.copy()
+truth = {}          # fault class -> boolean mask
+idx = np.arange(N)
+
+# isolated spikes: 14 points, 3 to 8 K, random sign
+spike_idx = rng.choice(idx[(idx > 300) & (idx < N - 300)], 14, replace=False)
+spike_idx.sort()
+spike_amp = rng.uniform(3.0, 8.0, 14) * rng.choice([-1, 1], 14)
+x[spike_idx] += spike_amp
+m = np.zeros(N, bool); m[spike_idx] = True; truth["spike"] = m
+
+# step change: +2.5 K for 36 h starting day 20 (radiation-shield fault)
+s0 = 20 * 288; s1 = s0 + 36 * 12
+x[s0:s1] += 2.5
+m = np.zeros(N, bool); m[s0:s1] = True; truth["step"] = m
+
+# exact flatline: 6 h frozen at the entry value, day 8
+f0 = 8 * 288 + 60; f1 = f0 + 72
+x[f0:f1] = x[f0]
+m = np.zeros(N, bool); m[f0:f1] = True; truth["flat_exact"] = m
+
+# dithered flatline: stuck sensor whose last digit still moves, day 24
+g0 = 24 * 288 + 100; g1 = g0 + 72
+x[g0:g1] = x[g0] + rng.uniform(-0.02, 0.02, 72)
+m = np.zeros(N, bool); m[g0:g1] = True; truth["flat_dither"] = m
+
+# calibration drift: linear ramp to +2.2 K over days 12 to 16
+d0 = 12 * 288; d1 = 16 * 288
+x[d0:d1] += np.linspace(0, 2.2, d1 - d0)
+m = np.zeros(N, bool); m[d0:d1] = True; truth["drift"] = m
+
+any_fault = np.zeros(N, bool)
+for v in truth.values():
+    any_fault |= v
+
+# three clean neighbour stations for the spatial check
+nbr = np.stack([make_station(21, 0.8), make_station(22, -0.6), make_station(23, 0.3)])
