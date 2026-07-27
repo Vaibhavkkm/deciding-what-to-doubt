@@ -1,7 +1,7 @@
 """Numerical experiments for the reading report.
 
-Builds the controlled synthetic benchmark on which the detection ideas in
-the reading list are compared.
+Reproduces, on a controlled synthetic benchmark, the behaviour of the main
+detection ideas in the reading list: Grubbs' test (1969).
 
 Everything is seeded, so a re-run gives identical numbers and figures.
 """
@@ -106,3 +106,30 @@ for v in truth.values():
 
 # three clean neighbour stations for the spatial check
 nbr = np.stack([make_station(21, 0.8), make_station(22, -0.6), make_station(23, 0.3)])
+
+
+# ----------------------------------------------------------------------
+# 2. Detectors
+# ----------------------------------------------------------------------
+def grubbs_crit(n, alpha=0.05):
+    """Two-sided critical value from the exact t-quantile formula."""
+    from scipy import stats
+    t = stats.t.ppf(1 - alpha / (2 * n), n - 2)
+    return (n - 1) / np.sqrt(n) * np.sqrt(t**2 / (n - 2 + t**2))
+
+def grubbs_iterative(v, alpha=0.05, max_out=50):
+    """Grubbs' test applied one observation at a time (as commonly misused)."""
+    v = v.astype(float); keep = np.ones(len(v), bool)
+    flagged = []
+    for _ in range(max_out):
+        vv = v[keep]
+        mu, sd = vv.mean(), vv.std(ddof=1)
+        g = np.abs(vv - mu) / sd
+        j = np.argmax(g)
+        if g[j] > grubbs_crit(len(vv), alpha):
+            orig = np.where(keep)[0][j]
+            flagged.append(orig); keep[orig] = False
+        else:
+            break
+    out = np.zeros(len(v), bool); out[flagged] = True
+    return out
