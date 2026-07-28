@@ -133,3 +133,26 @@ def grubbs_iterative(v, alpha=0.05, max_out=50):
             break
     out = np.zeros(len(v), bool); out[flagged] = True
     return out
+
+def gesd(v, r_max, alpha=0.05):
+    """Generalized ESD (Rosner 1983): decide the number of outliers afterwards."""
+    from scipy import stats
+    v = v.astype(float); n = len(v)
+    keep = np.ones(n, bool); cand = []; R = []; lam = []
+    for i in range(1, r_max + 1):
+        vv = v[keep]
+        mu, sd = vv.mean(), vv.std(ddof=1)
+        g = np.abs(vv - mu) / sd
+        j = np.argmax(g)
+        cand.append(np.where(keep)[0][j]); R.append(g[j])
+        ni = n - i + 1
+        p = 1 - alpha / (2 * ni)
+        tq = stats.t.ppf(p, ni - 2)
+        lam.append((ni - 1) * tq / np.sqrt((ni - 2 + tq**2) * ni))
+        keep[cand[-1]] = False
+    k = 0
+    for i in range(r_max):
+        if R[i] > lam[i]:
+            k = i + 1
+    out = np.zeros(n, bool); out[cand[:k]] = True
+    return out
