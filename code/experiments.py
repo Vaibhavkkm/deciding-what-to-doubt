@@ -1,7 +1,8 @@
 """Numerical experiments for the reading report.
 
 Reproduces, on a controlled synthetic benchmark, the behaviour of the main
-detection ideas in the reading list: Grubbs' test (1969).
+detection ideas in the reading list: Grubbs' test (1969) and the modified
+z-score of Iglewicz and Hoaglin (1993).
 
 Everything is seeded, so a re-run gives identical numbers and figures.
 """
@@ -155,4 +156,24 @@ def gesd(v, r_max, alpha=0.05):
         if R[i] > lam[i]:
             k = i + 1
     out = np.zeros(n, bool); out[cand[:k]] = True
+    return out
+
+def modified_z(v):
+    med = np.median(v)
+    mad = np.median(np.abs(v - med))
+    return 0.6745 * (v - med) / mad if mad > 0 else np.zeros(len(v))
+
+def rolling_modz(v, w):
+    """Centred rolling modified z-score, MAD guarded at zero."""
+    half = w // 2
+    out = np.zeros(len(v))
+    med = np.empty(len(v)); mad = np.empty(len(v))
+    for i in range(len(v)):
+        a, b = max(0, i - half), min(len(v), i + half + 1)
+        win = v[a:b]
+        med[i] = np.median(win)
+        mad[i] = np.median(np.abs(win - med[i]))
+    dev = v - med
+    nz = mad > 0
+    out[nz] = 0.6745 * dev[nz] / mad[nz]
     return out
