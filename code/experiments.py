@@ -177,3 +177,27 @@ def rolling_modz(v, w):
     nz = mad > 0
     out[nz] = 0.6745 * dev[nz] / mad[nz]
     return out
+
+# Monte Carlo check of the Grubbs critical value formula
+ns = np.arange(4, 31)
+mc_crit = []
+for n in ns:
+    z = rng.normal(size=(20000, n))
+    g = np.max(np.abs(z - z.mean(1, keepdims=True)), 1) / z.std(1, ddof=1)
+    mc_crit.append(np.quantile(g, 0.95))
+mc_crit = np.array(mc_crit)
+th_crit = np.array([grubbs_crit(n) for n in ns])
+print("max |MC - formula| =", np.abs(mc_crit - th_crit).max())
+
+# masking demonstration: two equal outliers in a small sample
+base = np.array([9.8, 10.1, 10.0, 9.9, 10.2, 10.05, 9.95, 10.15, 9.85, 10.1,
+                 9.9, 10.0, 10.05, 9.95, 10.1, 9.9, 10.0, 10.05])
+mask_sample = np.concatenate([base, [10.6, 10.6]])
+gr_mask = grubbs_iterative(mask_sample)
+esd_mask = gesd(mask_sample, r_max=4)
+print("masking demo: grubbs flags", gr_mask.sum(), "| gesd flags", esd_mask.sum())
+
+# z vs modified z on the same small sample
+z_sc = (mask_sample - mask_sample.mean()) / mask_sample.std(ddof=1)
+m_sc = modified_z(mask_sample)
+print("max |z| =", np.abs(z_sc).max(), " max |M| =", np.abs(m_sc).max())
