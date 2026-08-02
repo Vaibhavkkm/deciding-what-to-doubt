@@ -45,4 +45,43 @@ ax.set_xlim(0, 30); ax.grid(axis="y")
 ax.legend(loc="lower left", handletextpad=0.4)
 fig.savefig(FIG + "fig_series.png"); plt.close(fig)
 
+# ----------------------------------------------------------------- fig 2
+fig, (a1, a2) = plt.subplots(1, 2, figsize=(6.6, 2.5))
+a1.plot(d["ns"], d["th_crit"], color=S1, lw=1.6, label="exact formula")
+a1.plot(d["ns"], d["mc_crit"], ls="none", marker="o", ms=3.6, mfc="none",
+        mec=S2, mew=1.0, label="Monte Carlo, 20 000 draws")
+a1.set_xlabel("sample size $n$"); a1.set_ylabel("critical value $G_{0.05}$")
+a1.set_title("Grubbs critical values recomputed")
+a1.grid(axis="y"); a1.legend(loc="lower right")
+
+ms = d["mask_sample"]; n = len(ms)
+xpos = np.arange(n)
+a2.axhline(ms[:18].mean(), color=BASE, lw=0.8)
+a2.scatter(xpos[:18], ms[:18], s=14, color=S1, label="inliers")
+a2.scatter(xpos[18:], ms[18:], s=26, color=CRIT, marker="D",
+           label="planted pair")
+a2.text(0.03, 0.9, "iterated Grubbs: 0 flags (masked)\ngeneralized ESD: 2 flags",
+        transform=a2.transAxes, fontsize=7.6, color=INK2, va="top")
+a2.set_xlabel("observation index"); a2.set_ylabel("value")
+a2.set_title("Masking: the pair hides itself")
+a2.grid(axis="y"); a2.legend(loc="lower left", handletextpad=0.3)
+fig.tight_layout(w_pad=2.0)
+fig.savefig(FIG + "fig_grubbs.png"); plt.close(fig)
+
+# ----------------------------------------------------------------- fig 3
+fig, ax = plt.subplots(figsize=(6.6, 2.3))
+ax.axhline(3.0, color=S2, lw=0.9, ls=(0, (4, 3)))
+ax.axhline(3.5, color=S1, lw=0.9, ls=(0, (4, 3)))
+ax.text(19.4, 3.08, "|z| = 3", color=S2, fontsize=7.5)
+ax.text(19.4, 3.7, "|M| = 3.5", color=S1, fontsize=7.5)
+ax.plot(xpos, np.abs(d["z_sc"]), marker="o", ms=3.4, lw=0.9, color=S2,
+        label="classical z-score |z|")
+ax.plot(xpos, np.abs(d["m_sc"]), marker="s", ms=3.4, lw=0.9, color=S1,
+        label="modified z-score |M|")
+ax.set_xlabel("observation index"); ax.set_ylabel("score")
+ax.set_title("Same sample, two scores: the planted pair never reaches |z| = 3 "
+             "yet clears |M| = 3.5 with room to spare")
+ax.grid(axis="y"); ax.legend(loc="upper left")
+fig.savefig(FIG + "fig_modz.png"); plt.close(fig)
+
 print("figures written")
