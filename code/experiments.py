@@ -1,8 +1,9 @@
 """Numerical experiments for the reading report.
 
 Reproduces, on a controlled synthetic benchmark, the behaviour of the main
-detection ideas in the reading list: Grubbs' test (1969) and the modified
-z-score of Iglewicz and Hoaglin (1993).
+detection ideas in the reading list: Grubbs' test (1969), the modified
+z-score of Iglewicz and Hoaglin (1993) and the Oklahoma Mesonet test
+battery (Shafer et al. 2000).
 
 Everything is seeded, so a re-run gives identical numbers and figures.
 """
@@ -177,6 +178,10 @@ def rolling_modz(v, w):
     nz = mad > 0
     out[nz] = 0.6745 * dev[nz] / mad[nz]
     return out
+
+def step_test(v, limit=3.0):
+    d = np.abs(np.diff(v, prepend=v[0]))
+    return d >= limit
 
 # Monte Carlo check of the Grubbs critical value formula
 ns = np.arange(4, 31)
