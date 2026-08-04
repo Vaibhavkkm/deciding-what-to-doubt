@@ -183,6 +183,17 @@ def step_test(v, limit=3.0):
     d = np.abs(np.diff(v, prepend=v[0]))
     return d >= limit
 
+def persistence_equality(v, min_run=12):
+    """A run of exactly repeated values at least min_run long."""
+    out = np.zeros(len(v), bool)
+    start = 0
+    for i in range(1, len(v) + 1):
+        if i == len(v) or v[i] != v[i - 1]:
+            if i - start >= min_run:
+                out[start:i] = True
+            start = i
+    return out
+
 # Monte Carlo check of the Grubbs critical value formula
 ns = np.arange(4, 31)
 mc_crit = []
