@@ -194,6 +194,15 @@ def persistence_equality(v, min_run=12):
             start = i
     return out
 
+def persistence_variance(v, w=36, sd_min=0.02):
+    """Mesonet-style: rolling standard deviation below a floor (3 h window)."""
+    out = np.zeros(len(v), bool)
+    for i in range(len(v)):
+        a = max(0, i - w + 1)
+        if i - a + 1 >= w and np.std(v[a:i + 1]) < sd_min:
+            out[a:i + 1] = True
+    return out
+
 # Monte Carlo check of the Grubbs critical value formula
 ns = np.arange(4, 31)
 mc_crit = []
