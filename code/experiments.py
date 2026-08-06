@@ -203,6 +203,14 @@ def persistence_variance(v, w=36, sd_min=0.02):
             out[a:i + 1] = True
     return out
 
+def spatial_test(v, neighbours, k=3.0, train=3 * 288):
+    """Compare with the neighbour median after removing per-station offsets."""
+    offs = np.array([np.median(v[:train] - nb[:train]) for nb in neighbours])
+    ref = np.median(neighbours + offs[:, None], axis=0)
+    resid = v - ref
+    sd = np.std(resid[:train])
+    return np.abs(resid) > k * sd
+
 # Monte Carlo check of the Grubbs critical value formula
 ns = np.arange(4, 31)
 mc_crit = []
