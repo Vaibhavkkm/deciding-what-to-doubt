@@ -2,11 +2,14 @@
 
 Reproduces, on a controlled synthetic benchmark, the behaviour of the main
 detection ideas in the reading list: Grubbs' test (1969), the modified
-z-score of Iglewicz and Hoaglin (1993) and the Oklahoma Mesonet test
-battery (Shafer et al. 2000).
+z-score of Iglewicz and Hoaglin (1993), the Oklahoma Mesonet test battery
+(Shafer et al. 2000), the sequential QA/QC pipeline of Campbell et al.
+(2013), and a one-step-ahead regression detector in the spirit of Leigh
+et al. (2019).
 
 Everything is seeded, so a re-run gives identical numbers and figures.
 """
+
 import json
 import numpy as np
 import matplotlib
@@ -210,6 +213,20 @@ def spatial_test(v, neighbours, k=3.0, train=3 * 288):
     resid = v - ref
     sd = np.std(resid[:train])
     return np.abs(resid) > k * sd
+
+def regression_test(v, k=4.0, train=5 * 288):
+    """One-step-ahead forecast with a climatological increment (Leigh-style)."""
+    inc = np.zeros(288)
+    tod = np.arange(len(v)) % 288
+    for j in range(288):
+        d = np.diff(v[:train])[tod[1:train] == j]
+        inc[j] = np.median(d) if len(d) else 0.0
+    pred = np.empty(len(v)); pred[0] = v[0]
+    pred[1:] = v[:-1] + inc[tod[1:]]
+    innov = v - pred
+    sd = np.std(innov[1:train])
+    return np.abs(innov) > k * sd
+
 
 # Monte Carlo check of the Grubbs critical value formula
 ns = np.arange(4, 31)
