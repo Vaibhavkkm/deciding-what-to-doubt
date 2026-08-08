@@ -228,6 +228,48 @@ def regression_test(v, k=4.0, train=5 * 288):
     return np.abs(innov) > k * sd
 
 
+# ----------------------------------------------------------------------
+# 3. Run the battery and score it
+# ----------------------------------------------------------------------
+mz7 = rolling_modz(x, 7)
+
+detectors = {
+    "Grubbs, global, iterated": grubbs_iterative(x),
+    "Modified z, global, 3.5": np.abs(modified_z(x)) > 3.5,
+    "Modified z, rolling w=7, 3.5": np.abs(mz7) > 3.5,
+    "Modified z, rolling w=7, 30": np.abs(mz7) > 30,
+    "Step test, 3 K per 5 min": step_test(x),
+    "Persistence, equality": persistence_equality(x),
+    "Persistence, variance": persistence_variance(x),
+    "Spatial, neighbour median": spatial_test(x, nbr),
+    "Regression, one step ahead": regression_test(x),
+}
+
+def tolerant_hits(flags, mask, tol=1):
+    """A faulty point counts as caught if a flag lands within tol samples."""
+    conv = flags.copy()
+    for s in range(1, tol + 1):
+        conv[:-s] |= flags[s:]
+        conv[s:] |= flags[:-s]
+    return conv & mask
+
+results = {}
+days = N / 288
+for name, fl in detectors.items():
+    row = {}
+    for cls, mask in truth.items():
+        if cls == "spike":
+            hit = tolerant_hits(fl, mask, tol=1)
+            row[cls] = 100.0 * hit.sum() / mask.sum()
+        else:
+            row[cls] = 100.0 * (fl & mask).sum() / mask.sum()
+    row["fa_per_day"] = (fl & ~any_fault).sum() / days
+    results[name] = row
+
+with open("results.json", "w") as f:
+    json.dump(results, f, indent=1)
+print(json.dumps(results, indent=1))
+
 # Monte Carlo check of the Grubbs critical value formula
 ns = np.arange(4, 31)
 mc_crit = []
