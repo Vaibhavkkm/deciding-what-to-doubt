@@ -84,4 +84,24 @@ ax.set_title("Same sample, two scores: the planted pair never reaches |z| = 3 "
 ax.grid(axis="y"); ax.legend(loc="upper left")
 fig.savefig(FIG + "fig_modz.png"); plt.close(fig)
 
+# ----------------------------------------------------------------- fig 4
+fig, (a1, a2) = plt.subplots(2, 1, figsize=(6.6, 4.0), sharex=True)
+for w, col in [(7, S1), (25, S2), (97, S3)]:
+    a1.plot(d["sweep_T"], d[f"fa{w}"], color=col, lw=1.5)
+    a2.plot(d["sweep_T"], d[f"rec{w}"], color=col, lw=1.5, label=f"window {w}")
+for a in (a1, a2):
+    a.axvline(3.5, color=INK2, lw=0.8, ls=(0, (4, 3)))
+    a.axvspan(30, 300, color=S4, alpha=0.12, lw=0)
+    a.set_xscale("log")
+a1.text(3.6, 5.4, "textbook 3.5", fontsize=7.5, color=INK2, rotation=0)
+a1.text(90, 5.4, "operational range", fontsize=7.5, color=INK2, ha="center")
+a1.set_ylabel("false alarms per day"); a1.grid(axis="y")
+a1.set_title("Rolling modified z-score: the threshold trades false alarms "
+             "against missed spikes")
+a2.set_ylabel("spike recall (%)"); a2.set_xlabel("threshold on |M| (log scale)")
+a2.grid(axis="y"); a2.legend(loc="lower left")
+a2.set_xlim(d["sweep_T"][0], d["sweep_T"][-1] * 1.35)
+fig.tight_layout(h_pad=1.0)
+fig.savefig(FIG + "fig_thresholds.png"); plt.close(fig)
+
 print("figures written")
