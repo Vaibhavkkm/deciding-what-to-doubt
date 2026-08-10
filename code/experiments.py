@@ -270,6 +270,27 @@ with open("results.json", "w") as f:
     json.dump(results, f, indent=1)
 print(json.dumps(results, indent=1))
 
+# threshold sweep for the rolling modified z-score
+sweep_T = np.logspace(np.log10(2), np.log10(400), 45)
+sweeps = {}
+for w, col in [(7, S1), (25, S2), (97, S3)]:
+    mz = mz7 if w == 7 else rolling_modz(x, w)
+    fa, rec = [], []
+    for T in sweep_T:
+        fl = np.abs(mz) > T
+        fa.append((fl & ~any_fault).sum() / days)
+        rec.append(100.0 * tolerant_hits(fl, truth["spike"], 1).sum()
+                   / truth["spike"].sum())
+    sweeps[w] = (np.array(fa), np.array(rec), col)
+    fa_a, rec_a = sweeps[w][0], sweeps[w][1]
+    ok = (fa_a == 0) & (rec_a == 100.0)
+    lo = sweep_T[rec_a == 100.0].max() if (rec_a == 100.0).any() else np.nan
+    zi = sweep_T[fa_a == 0].min() if (fa_a == 0).any() else np.nan
+    print(f"w={w}: FA/day at 3.5 = {np.interp(3.5, sweep_T, fa_a):.2f}; "
+          f"first zero-FA threshold = {zi:.1f}; "
+          f"largest threshold with full spike recall = {lo:.1f}; "
+          f"clean operating window exists = {ok.any()}")
+
 # Monte Carlo check of the Grubbs critical value formula
 ns = np.arange(4, 31)
 mc_crit = []
@@ -293,3 +314,21 @@ print("masking demo: grubbs flags", gr_mask.sum(), "| gesd flags", esd_mask.sum(
 z_sc = (mask_sample - mask_sample.mean()) / mask_sample.std(ddof=1)
 m_sc = modified_z(mask_sample)
 print("max |z| =", np.abs(z_sc).max(), " max |M| =", np.abs(m_sc).max())
+
+# persist everything the figures need
+np.savez_compressed(
+    "bench.npz",
+    x=x, x_true=x_true, t_hours=t_hours, nbr=nbr,
+    spike_idx=spike_idx, spike_amp=spike_amp,
+    seg_step=np.array([s0, s1]), seg_flat=np.array([f0, f1]),
+    seg_dither=np.array([g0, g1]), seg_drift=np.array([d0, d1]),
+    sweep_T=sweep_T,
+    fa7=sweeps[7][0], rec7=sweeps[7][1],
+    fa25=sweeps[25][0], rec25=sweeps[25][1],
+    fa97=sweeps[97][0], rec97=sweeps[97][1],
+    ns=ns, mc_crit=mc_crit, th_crit=th_crit,
+    mask_sample=mask_sample, gr_mask=gr_mask, esd_mask=esd_mask,
+    z_sc=z_sc, m_sc=m_sc,
+)
+print("saved bench.npz")
+print("w97 max recall:", sweeps[97][1].max(), "| w25 max recall:", sweeps[25][1].max())
