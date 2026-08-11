@@ -1,5 +1,6 @@
-"""Figures for the reading report. Reads bench.npz produced by
+"""Figures for the reading report. Reads bench.npz + results.json produced by
 experiments.py, so figures can be regenerated without re-running the battery."""
+
 import json
 import numpy as np
 import matplotlib
@@ -25,6 +26,7 @@ plt.rcParams.update({
 })
 
 d = np.load("bench.npz")
+results = json.load(open("results.json"))
 FIG = "../figures/"
 days = d["t_hours"] / 24.0
 
@@ -103,5 +105,32 @@ a2.grid(axis="y"); a2.legend(loc="lower left")
 a2.set_xlim(d["sweep_T"][0], d["sweep_T"][-1] * 1.35)
 fig.tight_layout(h_pad=1.0)
 fig.savefig(FIG + "fig_thresholds.png"); plt.close(fig)
+
+# ----------------------------------------------------------------- fig 5
+classes = ["spike", "step", "flat_exact", "flat_dither", "drift"]
+class_lab = ["spike", "step", "flatline\n(exact)", "flatline\n(dithered)", "drift"]
+names = list(results.keys())
+M = np.array([[results[nm][c] for c in classes] for nm in names])
+fa = np.array([results[nm]["fa_per_day"] for nm in names])
+
+fig, ax = plt.subplots(figsize=(6.6, 3.4))
+seq = matplotlib.colors.LinearSegmentedColormap.from_list(
+    "seq", ["#f3f7fd", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"])
+im = ax.imshow(M, cmap=seq, vmin=0, vmax=100, aspect="auto")
+for i in range(len(names)):
+    for j in range(len(classes)):
+        v = M[i, j]
+        ax.text(j, i, f"{v:.0f}", ha="center", va="center", fontsize=7.6,
+                color="white" if v > 55 else INK2)
+    ax.text(len(classes) - 0.28, i, f"{fa[i]:.2f}", ha="left", va="center",
+            fontsize=7.6, color=INK2, transform=ax.transData, clip_on=False)
+ax.text(len(classes) - 0.28, -0.9, "false alarms\nper day", ha="left",
+        va="center", fontsize=7.2, color=MUTED, clip_on=False)
+ax.set_xticks(range(len(classes)), class_lab, fontsize=7.6)
+ax.set_yticks(range(len(names)), names, fontsize=7.8)
+ax.set_title("Share of faulty points flagged, by detector and fault class (%)")
+ax.spines[:].set_visible(False)
+ax.tick_params(length=0)
+fig.savefig(FIG + "fig_detectors.png"); plt.close(fig)
 
 print("figures written")
