@@ -1,0 +1,165 @@
+% =====================================================================
+% Deciding What to Doubt
+% Reading report, Advanced Topics in Mathematical Modelling
+% University of Luxembourg, August 2026
+% Compile: pdflatex -> bibtex -> pdflatex -> pdflatex  (or latexmk)
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}          % Times text and maths (vector fonts everywhere)
+\usepackage[scaled=0.92]{helvet}
+\usepackage{courier}
+\usepackage{textcomp}
+\usepackage{microtype}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[round]{natbib}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[font=small,labelfont={bf},skip=6pt]{caption}
+\usepackage{setspace}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+\linespread{1.13}
+\setlength{\headheight}{14pt}
+
+% ---- colours used only for code listings -----------------------------
+\definecolor{codekw}{HTML}{1c5cab}
+\definecolor{codecomment}{HTML}{898781}
+\definecolor{codestr}{HTML}{008300}
+\definecolor{codebg}{HTML}{fcfcfb}
+
+\lstdefinestyle{py}{
+  language=Python,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  stringstyle=\color{codestr},
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny\color{codecomment},
+  numbersep=8pt,
+  breaklines=true,
+  breakatwhitespace=true,
+  frame=single,
+  rulecolor=\color{codecomment!40},
+  backgroundcolor=\color{codebg},
+  aboveskip=10pt,
+  belowskip=10pt,
+  captionpos=b
+}
+
+\newcommand{\work}[1]{\textit{#1}}
+
+\begin{document}
+
+% =====================================================================
+% Cover page
+% =====================================================================
+\begin{titlepage}
+  \centering
+  {\large University of Luxembourg\par}
+  {\normalsize Faculty of Science, Technology and Medicine\par}
+  \vspace{0.4cm}
+  {\normalsize Master in Mathematics\par}
+  \vspace{2.6cm}
+  {\normalsize Reading report for the course\par}
+  {\large \textsc{Advanced Topics in Mathematical Modelling}\par}
+  \vspace{1.8cm}
+  {\LARGE\bfseries Deciding What to Doubt\par}
+  \vspace{0.5cm}
+  {\large The statistical lineage of automated quality control\\
+   for environmental sensor networks\par}
+  \vspace{2.8cm}
+  {\normalsize
+    \begin{tabular}{rl}
+      Author: & Vaibhav \textsc{Mangroliya} \\[2pt]
+      Academic supervisor: & Dr.\ Senthil Murugan \textsc{Nagarajan} \\[2pt]
+      Course responsible: & Dr.\ Jack S. \textsc{Hale} \\
+    \end{tabular}\par}
+  \vfill
+  {\normalsize Luxembourg, August 2026\par}
+\end{titlepage}
+
+% =====================================================================
+% Abstract and statements
+% =====================================================================
+\thispagestyle{empty}
+\section*{Abstract}
+Every automated quality control system for environmental sensor data answers
+the same question thousands of times a day: is this reading to be trusted?
+This report reads five works that shaped how that question is answered, from
+Grubbs' consolidation of classical outlier tests, through the robust
+reformulation of Iglewicz and Hoaglin, the first fully operational network
+quality assurance system at the Oklahoma Mesonet, and the streaming QA/QC
+framework of Campbell and colleagues, to the anomaly detection framework of
+Leigh and colleagues for in situ water sensors. Following the five-role
+format of the course, I trace where the ideas came from, restate the methods
+in one notation, reproduce their central behaviours in Python on a controlled
+synthetic benchmark, follow their influence to the current research frontier,
+and critique them. Two threads organise the whole story. First, every method
+in this lineage is a statistic plus a reference set plus a threshold, and
+what changed over 170 years is where the reference set comes from: theory,
+then history, then neighbouring sensors, then learned models. Second, the
+thresholds have always been the weakest joint. My experiments show that the
+textbook constant of the modified z-score does not transfer to autocorrelated
+high-frequency data, and that no threshold alone can buy both full detection
+and silence.
+
+\vspace{1.4cm}
+\section*{Statement on the use of AI tools}
+I prepared this report with the assistance of a large language model (Claude,
+Anthropic), used with the prior written permission of the course responsible.
+The choice of topic and reading list, the direction of the analysis, and the
+positions taken are my own. The numerical experiments in
+Section~\ref{sec:experimentalists} were designed around questions I brought
+from my thesis work, and I executed, checked and can defend every number,
+figure and line of code they produced. All bibliographic details were
+verified against the published sources, and citation statistics were taken
+from OpenAlex on 19 August 2026. I have read the full text and I take
+responsibility for it.
+
+\vspace{1.4cm}
+\section*{Relation to the Master's thesis}
+My thesis describes the design, implementation and audit of an automated
+quality control pipeline for the environmental monitoring network of a
+Luxembourg research institute. This report deliberately does not describe
+that system. It reads the literature the system quietly stands on, and it is
+substantially different in aim, structure and content from the literature
+review contained in the thesis: the thesis review surveys what exists in
+order to position an implementation, while this report studies five works as
+objects in their own right, historically, technically, experimentally and
+critically.
+
+\clearpage
+\pagenumbering{roman}
+\begin{spacing}{0.96}
+\tableofcontents
+\end{spacing}
+\clearpage
+\pagenumbering{arabic}
+
+\input{sections/01-introduction}
+\input{sections/02-reading-list}
+\input{sections/03-historians}
+\input{sections/04-technicians}
+\input{sections/05-experimentalists}
+\input{sections/06-futurists}
+\input{sections/07-critics}
+\input{sections/08-synthesis}
+
+\clearpage
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\clearpage
+\appendix
+\input{sections/appendix}
+
+\end{document}
