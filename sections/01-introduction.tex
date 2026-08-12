@@ -1,0 +1,76 @@
+\section{Introduction}
+\label{sec:introduction}
+
+An environmental monitoring network is a machine for producing doubt. A
+single automatic weather station reporting eleven quantities at five minute
+intervals generates over three thousand readings a day, and a modest national
+network multiplies that by a hundred stations. Nobody looks at those numbers.
+They flow into databases, feed flood forecasts and drought bulletins, anchor
+long climate records, and calibrate the models that agricultural and water
+authorities act on. Somewhere between the anemometer and the decision, a
+judgement has to be made about every single value: keep it, flag it, or throw
+it away. Since no human can make that judgement three thousand times a day
+per station, the judgement is delegated to algorithms, and the design of
+those algorithms turns out to be a surprisingly deep statistical problem with
+a surprisingly long history.
+
+I spent the past five months inside that problem. My Master's thesis, written
+alongside this course, documents an internship at a Luxembourg research
+institute where I extended and audited an automated quality control pipeline
+for an eco-hydrological observatory: physical limit checks, seasonal
+plausibility bands, stuck-sensor detection, spike detection with a robust
+score, cross-parameter consistency rules, and comparisons against
+neighbouring stations. Building such a system raises questions the code
+itself never answers. Why a modified z-score and not a plain one? Where does
+a threshold of exactly 3.5, or 30, or 300 come from, and who is accountable
+for it? Why do operational systems still run rule batteries from the 1990s
+when the anomaly detection literature has moved on to learned models? This
+reading report is my attempt to answer those questions properly, by going
+back to the works where the answers were first written down.
+
+The reading list, assembled with my supervisor's blessing to follow my own
+curiosity, spans 170 years of a single intellectual thread: how a measurement
+earns distrust. \citet{grubbs1969} consolidated the classical statistics of
+outlying observations into the tests that still carry his name.
+\citet{iglewicz1993} repackaged the robust revolution of the 1970s into a
+practitioner's rule, the modified z-score, that now sits inside more sensor
+pipelines than its authors could have imagined. \citet{shafer2000} described
+the first quality assurance system for a large automated surface network,
+the Oklahoma Mesonet, and fixed the architecture that nearly every
+operational network has copied since. \citet{campbell2013} generalised that
+architecture into a framework for streaming ecological sensor data and gave
+the field its slogan: quantity is nothing without quality. \citet{leigh2019}
+brought the statisticians back in, formalising anomaly detection for in situ
+water quality sensors and measuring, honestly, how well modern methods
+actually perform. Read in sequence, the five works are less a pile of papers
+than one long argument, passed between astronomers, ballisticians, quality
+engineers, meteorologists, ecologists and statisticians, about what it means
+for a number to be believable.
+
+The report follows the five-role structure suggested for this course, with
+each role applied across the whole reading list rather than one role per
+paper. Section~\ref{sec:readinglist} presents the list itself and the logic
+of its selection. Section~\ref{sec:historians} is the Historians' section: it
+reconstructs the context in which each work was written, from a scandal over
+discarded astronomical observations in the 1850s to a flash flood in Tulsa
+that motivated a state-wide sensor network. Section~\ref{sec:technicians} is
+the Technicians' section: it restates the central methods of all five works
+in a single notation and isolates the anatomy they share.
+Section~\ref{sec:experimentalists} is the Experimentalists' section: I
+implement the methods in Python and reproduce their characteristic
+behaviours, including their failure modes, on a synthetic benchmark with
+known ground truth. Section~\ref{sec:futurists} is the Futurists' section: it
+traces citation trajectories, standardisation and software descendants up to
+the current frontier. Section~\ref{sec:critics} is the Critics' section: it
+reads each work against the others and against my own operational
+experience, and names what they leave unsaid.
+Section~\ref{sec:synthesis} draws the threads together.
+
+Two disclaimers belong up front. First, this report is not a literature
+review for my thesis and does not describe the system I built; where my
+internship experience sharpens a question, I say so in a sentence and move
+on. Second, the experiments in Section~\ref{sec:experimentalists} use
+synthetic data by design. I wanted ground truth, controlled fault injection
+and exact reproducibility, three things no real archive provides, and the
+price, which I discuss there, is that my quantitative results characterise
+the methods on a model of reality rather than reality itself.
