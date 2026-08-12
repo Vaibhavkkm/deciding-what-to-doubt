@@ -1,0 +1,248 @@
+\section{Technicians: five methods in one notation}
+\label{sec:technicians}
+
+This section restates the technical core of the five readings in a common
+notation, sketches the arguments that matter, and ends with the shared
+anatomy that makes the works comparable. Throughout, a batch sample is
+$x_1,\dots,x_n$, assumed exchangeable unless stated otherwise, with sample
+mean $\bar{x}$, sample standard deviation $s$, median $\tilde{x}$ and median
+absolute deviation
+$\mathrm{MAD} = \operatorname{median}_i \lvert x_i - \tilde{x} \rvert$. A
+time series is $x_t$, $t = 1,\dots,N$, observed at a fixed interval $\Delta$.
+A detector is a decision rule
+$\delta(x) \in \{\text{accept}, \text{flag}\}$, and every detector in this
+lineage decomposes into the same three parts: a statistic that measures
+surprise, a reference set that defines what unsurprising data look like, and
+a threshold that converts surprise into a verdict.
+
+\subsection{Grubbs: outlier detection as hypothesis testing}
+\label{sec:tech-grubbs}
+
+\citet{grubbs1969} treats the doubtful observation as a hypothesis test under
+the normal model. For a single suspect on either side, the statistic is the
+extreme studentised deviate,
+\begin{equation}
+  G \;=\; \frac{\max_i \lvert x_i - \bar{x} \rvert}{s},
+  \label{eq:grubbs}
+\end{equation}
+and the null hypothesis is that $x_1,\dots,x_n$ are independent draws from
+one normal distribution with unknown mean and variance. The elegant part,
+due to the line of work Grubbs consolidates, is that the null distribution of
+$G$ is available in closed form through a change of viewpoint: conditioning
+on which observation is extreme turns the problem into a two-sample $t$
+comparison of the suspect against the remaining $n-1$ points, and a
+Bonferroni argument over the $n$ possible suspects is exact at the relevant
+tail. The two-sided critical value at level $\alpha$ is
+\begin{equation}
+  G_{\alpha,n} \;=\; \frac{n-1}{\sqrt{n}}
+  \sqrt{\frac{t^2_{\alpha/(2n),\,n-2}}{\,n-2+t^2_{\alpha/(2n),\,n-2}\,}},
+  \label{eq:grubbscrit}
+\end{equation}
+where $t_{p,\nu}$ is the upper $p$ quantile of Student's $t$ with $\nu$
+degrees of freedom. Section~\ref{sec:experimentalists} verifies this formula
+by simulation. Two design decisions in the paper deserve emphasis. First,
+Grubbs insists that the analyst declare the alternative in advance, one
+outlier or two, upper side or both, because each alternative has its own
+statistic; for a pair of suspects on the same side he provides ratio
+statistics of the form $S^2_{n-1,n}/S^2$, comparing the residual sum of
+squares with and without the suspect pair. Second, he is explicit that the
+tests assume a single homogeneous batch. Nothing in the paper licenses
+applying Equation~\eqref{eq:grubbs} to a stream with trend or seasonality,
+a warning the sensor era would quietly ignore.
+
+The known internal weakness is masking, analysed by \citet{pearson1936}
+before the tests were standardised. Two similar outliers inflate $s$
+together, so the statistic of each falls below the critical value and the
+one-at-a-time test finds nothing. The repair that practice eventually adopted
+is Rosner's generalised extreme studentised deviate procedure
+\citep{rosner1983}: fix an upper bound $r$ on the number of outliers, remove
+the most extreme point and recompute the statistic $r$ times, obtaining
+$R_1,\dots,R_r$ with per-step critical values $\lambda_1,\dots,\lambda_r$,
+and declare the number of outliers to be the largest $i$ with
+$R_i > \lambda_i$. Deciding after all $r$ statistics are computed, rather
+than stopping at the first insignificant one, is the whole trick: a masked
+pair produces an insignificant $R_1$ but a large $R_2$, which the sequential
+stopping rule would never see.
+
+\subsection{Iglewicz and Hoaglin: the robust reformulation}
+\label{sec:tech-ih}
+
+\citet{iglewicz1993} replace the fragile ingredients of
+Equation~\eqref{eq:grubbs} rather than the logic. The mean has breakdown
+point zero, one bad observation moves it arbitrarily, and $s$ is worse,
+because contamination inflates it quadratically; the median and the MAD both
+withstand corruption of just under half the sample \citep{hampel1974}. Their
+modified z-score is
+\begin{equation}
+  M_i \;=\; \frac{0.6745\,(x_i - \tilde{x})}{\mathrm{MAD}},
+  \label{eq:modz}
+\end{equation}
+with the recommendation to label $x_i$ an outlier when
+$\lvert M_i \rvert > 3.5$. The constant is a consistency correction: for
+normal data the MAD estimates $\Phi^{-1}(0.75)\,\sigma \approx 0.6745\,
+\sigma$, so the factor rescales the MAD into standard deviation units and
+makes $M_i$ comparable to a classical z-score. The threshold 3.5 is not a
+quantile from a null distribution; the authors calibrated it by simulation on
+batches of independent observations as a value that rarely fires on clean
+normal samples of moderate size while catching gross errors. The price of
+robustness is efficiency, the MAD wastes information relative to $s$ on
+genuinely clean data, and the booklet is candid that the rule is a screening
+device rather than a test with a controlled error rate. Two properties will
+matter later: the scale in the denominator is estimated from whatever set the
+analyst supplies, and nothing in the derivation says that set may be a short
+sliding window over an autocorrelated stream.
+
+\subsection{Shafer and colleagues: quality assurance as architecture}
+\label{sec:tech-shafer}
+
+\citet{shafer2000} contains almost no probability, and that absence is its
+content. The Oklahoma Mesonet's quality assurance is an engineered system in
+which automated tests are one component among four, alongside laboratory
+calibration before deployment, scheduled sensor rotation, and field
+intercomparison against travelling reference standards. The automated battery
+runs daily over each series and issues, per observation, a graded flag:
+0 for good, 1 for suspect, 2 for warning, 3 for failure. In the notation
+above, the tests are:
+\begin{align}
+  \text{range:}\quad & L_p \le x_t \le U_p, \label{eq:range}\\
+  \text{step:}\quad & \lvert x_t - x_{t-1} \rvert \le \delta_p, \label{eq:step}\\
+  \text{persistence:}\quad & \operatorname{sd}\{x_u : u \in W_t\} \ge
+    s^{\min}_p \quad\text{and}\quad
+    \max_{u \in W_t} x_u - \min_{u \in W_t} x_u \ge r^{\min}_p,
+    \label{eq:persistence}\\
+  \text{like-instrument:}\quad & \lvert x^{(1)}_t - x^{(2)}_t \rvert \le d_p,
+    \label{eq:like}
+\end{align}
+where $p$ indexes the parameter, $W_t$ is a trailing window of roughly a
+day, and the constants come from instrument specifications and Oklahoma
+climatology rather than from any null distribution. The spatial test is the
+statistical heart. For station $s_0$ at time $t$, an objective analysis in
+the style of \citet{barnes1964} produces a neighbour-based estimate
+\begin{equation}
+  \hat{x}_t(s_0) \;=\;
+  \frac{\sum_{i} w_i\, x_t(s_i)}{\sum_{i} w_i},
+  \qquad w_i = \exp\!\big(-r_i^2 / 4\kappa\big),
+  \label{eq:barnes}
+\end{equation}
+with $r_i$ the distance to neighbour $s_i$ and $\kappa$ a smoothing length;
+the observation is flagged when $\lvert x_t(s_0) - \hat{x}_t(s_0)\rvert$
+exceeds a parameter-specific band. Two architectural principles complete the
+design. Flags are advisory: an automated verdict never deletes a value, it
+routes the value to a human quality assurance meteorologist whose daily
+review, trouble tickets and site visits close the loop. And every verdict is
+recorded, so the archive carries both the measurement and the history of
+opinions about it. The statistical modesty is deliberate; the system's power
+comes from redundancy of evidence, laboratory, field, temporal, spatial,
+rather than from the sharpness of any single test.
+
+\subsection{Campbell and colleagues: the streaming framework}
+\label{sec:tech-campbell}
+
+\citet{campbell2013} contribute a conceptual framework rather than new
+statistics, and the framework is best stated as definitions. Quality
+assurance is everything designed before data flow, site selection,
+calibration schedules, redundancy, metadata, training; quality control is
+everything applied to the data afterwards, automated checks and human
+review. The paper's taxonomy separates sensor faults, calibration drift,
+fouling, electrical noise, communication dropouts, from anomalies of
+scientific interest, real extremes that a naive filter would remove, and
+insists the two must be distinguishable in the archive. Its pipeline runs
+from sensor through datalogger, telemetry, ingest, automated QC, human
+review, to a versioned archive, with three commitments that have become
+community norms: never silently delete or overwrite, carry flags as data
+alongside the values, and publish data in graded levels, raw, provisional
+and quality-controlled, so users choose their own trade-off between latency
+and trust. The automated checks themselves are recognisably the Mesonet
+battery of Equations~\eqref{eq:range} to~\eqref{eq:barnes}, extended with
+ecological examples, and the paper is frank that automation exists to focus
+scarce human attention, not to replace it. In the anatomy of this report,
+Campbell and colleagues moved the reference set again: from the network's
+climatology to the institution's accumulated, versioned record of what its
+own sensors do when healthy and when failing.
+
+\subsection{Leigh and colleagues: anomaly detection formalised}
+\label{sec:tech-leigh}
+
+\citet{leigh2019} return to explicit statistics, now with the vocabulary of
+anomaly detection. Working with turbidity, conductivity and river level
+series from in situ sensors in two Queensland catchments, they first define
+an anomaly typology grounded in observed failure modes, isolated spikes,
+level shifts, persistent drift, periods of anomalously high or low
+variability, impossible values, and outages, and have experts label the
+historical record accordingly. Three families of detectors are then
+compared on the labelled data.
+
+Rule-based methods are the inherited battery: bounds and step limits as in
+Equations~\eqref{eq:range} and~\eqref{eq:step}, which catch impossible
+values and outages cheaply. Regression-based methods fit a time series model
+to a training window and flag observations that fall outside one-step-ahead
+prediction intervals: with an ARIMA or regression-with-ARIMA-errors model
+producing forecast $\hat{x}_t$ and forecast standard error
+$\hat{\sigma}_t$, the rule is
+\begin{equation}
+  \text{flag } x_t \iff
+  \lvert x_t - \hat{x}_t \rvert > k\,\hat{\sigma}_t,
+  \label{eq:regression}
+\end{equation}
+optionally run both forwards and backwards through the series. Feature-based
+methods, developed in the companion paper \citep{talagala2019}, embed
+windows of the series into a feature space, spectral entropy, autocorrelation
+structure, variance ratios and similar summaries, and declare anomalies where
+the feature vector is far from the mass of the data; the distance threshold
+is not hand-set but derived from extreme value theory, fitting a generalised
+Pareto tail to nearest-neighbour distances so that the flagging rate has an
+interpretable exceedance probability. This is the lineage's first
+principled return, since Grubbs, to thresholds with a probability attached.
+
+The evaluation is the paper's most consequential contribution. Performance
+is reported per anomaly type, and no family dominates: regression-based
+detectors are strong on the high-priority sudden faults, spikes and shifts,
+but degrade when the water itself behaves unusually; feature-based detectors
+are conservative, high specificity at the cost of sensitivity; rules are
+unbeatable on impossible values and outages; and slow drift defeats
+everything that looks only at one-step surprise. The recommendation is an
+ensemble with union and intersection rules tuned to the cost structure, and
+the framework closes with the same institutional move as Shafer and
+Campbell: detectors propose, people dispose.
+
+\subsection{The shared anatomy}
+\label{sec:tech-anatomy}
+
+Table~\ref{tab:anatomy} aligns the five works on the three-part anatomy.
+Read down the reference set column: theory (a parametric null), then robust
+theory (the sample's own resistant core), then engineering and climatology
+(what instruments and Oklahoma allow), then institutional memory (versioned
+archives of a network's own behaviour), then learned structure (models and
+feature distributions fitted to labelled history). That migration is the
+technical content of 170 years of this literature compressed into one
+sentence: the mathematics of the surprise statistic changed remarkably
+little, while the definition of unsurprising data absorbed ever more
+context. The thresholds, meanwhile, changed provenance five times without
+ever becoming self-justifying, a theme the Experimentalists' and Critics'
+sections take up quantitatively.
+
+\begin{table}[t]
+  \centering
+  \small
+  \caption{The three-part anatomy across the reading list.}
+  \label{tab:anatomy}
+  \begin{tabular}{@{}p{2.9cm}p{3.4cm}p{3.6cm}p{4.4cm}@{}}
+    \toprule
+    Work & Surprise statistic & Reference set & Threshold provenance \\
+    \midrule
+    \citet{grubbs1969} & extreme studentised deviate
+      & i.i.d.\ normal batch & exact null distribution, chosen $\alpha$ \\
+    \citet{iglewicz1993} & modified z-score
+      & robust core of the batch & simulation on clean batches; 3.5 \\
+    \citet{shafer2000} & rule residuals; deviation from Barnes estimate
+      & instrument specs, climatology, neighbours & engineering constants,
+        tuned in operations \\
+    \citet{campbell2013} & inherited battery
+      & institutional archive of healthy behaviour & site policy, versioned
+        and reviewed \\
+    \citet{leigh2019} & forecast innovation; feature-space distance
+      & fitted model of labelled history & prediction intervals; extreme
+        value tail on distances \\
+    \bottomrule
+  \end{tabular}
+\end{table}
