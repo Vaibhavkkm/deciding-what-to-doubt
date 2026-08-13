@@ -133,4 +133,85 @@ ax.spines[:].set_visible(False)
 ax.tick_params(length=0)
 fig.savefig(FIG + "fig_detectors.png"); plt.close(fig)
 
+# ----------------------------------------------------------------- fig 6
+# citation trajectories, OpenAlex counts_by_year, accessed 19 Aug 2026
+cby = {
+    "Grubbs 1969": {2012: 171, 2013: 202, 2014: 208, 2015: 194, 2016: 197,
+                    2017: 197, 2018: 206, 2019: 230, 2020: 170, 2021: 218,
+                    2022: 164, 2023: 162, 2024: 177, 2025: 166},
+    "Shafer et al. 2000": {2012: 11, 2013: 18, 2014: 13, 2015: 12, 2016: 15,
+                           2017: 18, 2018: 8, 2019: 11, 2020: 7, 2021: 18,
+                           2022: 15, 2023: 16, 2024: 3, 2025: 6},
+    "Campbell et al. 2013": {2014: 2, 2015: 8, 2016: 7, 2017: 9, 2018: 16,
+                             2019: 14, 2020: 7, 2021: 30, 2022: 10, 2023: 14,
+                             2024: 2, 2025: 2},
+    "Leigh et al. 2019": {2019: 10, 2020: 11, 2021: 22, 2022: 17, 2023: 25,
+                          2024: 21, 2025: 15},
+}
+totals = {"Grubbs 1969": 3742, "Shafer et al. 2000": 288,
+          "Campbell et al. 2013": 127, "Leigh et al. 2019": 133}
+fig, (a1, a2) = plt.subplots(1, 2, figsize=(6.6, 2.5),
+                             gridspec_kw={"width_ratios": [1.15, 1]})
+a1.plot(sorted(cby["Grubbs 1969"]), [cby["Grubbs 1969"][y] for y in
+        sorted(cby["Grubbs 1969"])], color=S1, lw=1.6)
+a1.annotate("Grubbs 1969", xy=(2025.2, 166), color=S1, fontsize=7.6, va="center")
+a1.set_ylim(0); a1.set_ylabel("citations per year"); a1.set_xlabel("year")
+a1.set_title("A 1969 paper, still cited daily"); a1.grid(axis="y")
+a1.set_xlim(2011.5, 2028.5)
+a1.set_xticks([2012, 2016, 2020, 2024])
+for nm, col in [("Shafer et al. 2000", S2), ("Campbell et al. 2013", S3),
+                ("Leigh et al. 2019", S6)]:
+    ys = sorted(cby[nm])
+    a2.plot(ys, [cby[nm][y] for y in ys], color=col, lw=1.6)
+    a2.annotate(nm.replace(" et al.", ""), xy=(ys[-1] + 0.2, cby[nm][ys[-1]]),
+                color=col, fontsize=7.4, va="center")
+a2.set_ylim(0); a2.set_xlabel("year"); a2.grid(axis="y")
+a2.set_title("The applied line of the lineage")
+a2.set_xlim(2011.5, 2029.5)
+a2.set_xticks([2012, 2016, 2020, 2024])
+fig.tight_layout(w_pad=2.0)
+fig.savefig(FIG + "fig_citations.png"); plt.close(fig)
+
+# ----------------------------------------------------------------- fig 7
+# vertical milestone chart: evenly spaced rows, so labels can never collide
+events = [
+    (1852, "Peirce's criterion", 0), (1863, "Chauvenet's rejection rule", 0),
+    (1936, "Pearson and Chandra Sekar analyse masking", 1),
+    (1950, "Grubbs' sample criteria for outlying observations", 1),
+    (1960, "Anscombe frames rejection rules as insurance", 1),
+    (1969, "Grubbs' Technometrics procedures [core reading]", 1),
+    (1974, "Hampel formalises MAD and robustness", 1),
+    (1983, "Rosner's generalized ESD procedure", 1),
+    (1988, "Gandin's complex quality control in NWP", 2),
+    (1993, "Iglewicz and Hoaglin's modified z-score [core reading]", 1),
+    (2000, "Shafer et al.: Oklahoma Mesonet QA [core reading]", 2),
+    (2013, "Campbell et al.: streaming QA/QC [core reading]", 3),
+    (2019, "Leigh et al.: anomaly detection framework [core reading]", 3),
+    (2022, "PyHydroQC, SaQC: QC as reusable software", 3),
+]
+era_names = ["astronomy's rejection rules", "the statistics of outliers",
+             "operational network QA", "streaming data and learning"]
+era_cols = ["#cde2fb", "#9ec5f4", "#86b6ef", "#5598e7"]
+fig, ax = plt.subplots(figsize=(6.6, 3.6))
+nE = len(events)
+for i, (y, lab, era) in enumerate(events):
+    row = nE - 1 - i
+    ax.scatter(0, row, s=42, color=era_cols[era], zorder=3,
+               edgecolor=S1, linewidth=0.8)
+    ax.text(-0.06, row, str(y), ha="right", va="center", fontsize=8.2,
+            color=INK, fontweight="semibold")
+    ax.text(0.06, row, lab, ha="left", va="center", fontsize=8.2, color=INK2)
+ax.plot([0, 0], [-0.4, nE - 0.6], color=BASE, lw=1.0, zorder=1)
+# era legend on the right
+for j, (nm, c) in enumerate(zip(era_names, era_cols)):
+    ax.scatter(1.58, nE - 1.2 - j * 1.15, s=42, color=c, edgecolor=S1,
+               linewidth=0.8, clip_on=False)
+    ax.text(1.63, nE - 1.2 - j * 1.15, nm, ha="left", va="center",
+            fontsize=7.6, color=INK2)
+ax.set_xlim(-0.28, 2.3); ax.set_ylim(-0.6, nE - 0.4)
+ax.axis("off")
+ax.set_title("From doubtful observations to streaming sensors: the lineage in "
+             "fourteen steps", pad=10)
+fig.savefig(FIG + "fig_timeline.png"); plt.close(fig)
+
 print("figures written")
