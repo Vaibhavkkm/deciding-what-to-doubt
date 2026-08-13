@@ -1,0 +1,257 @@
+\section{Experimentalists: reproducing the behaviour of the methods}
+\label{sec:experimentalists}
+
+The claims of the reading list are of two kinds: mathematical statements
+about statistics under stated assumptions, and operational statements about
+how detectors behave on real streams. Both kinds can be checked. This section
+implements the core methods of all five works in plain Python with NumPy and
+SciPy, verifies the mathematics by simulation, and stages a controlled
+comparison of the detector families on a synthetic benchmark with known
+ground truth. Everything is seeded and deterministic; the code is listed in
+Appendix~\ref{app:code} and a re-run reproduces every number and figure in
+this section exactly.
+
+\subsection{A benchmark with ground truth}
+\label{sec:exp-benchmark}
+
+Real archives are the wrong instrument for this comparison, for a reason the
+reading list itself teaches: real data carry no ground truth, so any
+evaluation inherits the judgement of whoever labelled them
+\citep{leigh2019}. I therefore built a synthetic series designed to look like
+the data my thesis system processes, thirty days of air temperature at five
+minute resolution, $N = 8640$ observations, composed of a diurnal harmonic of
+amplitude 5\,K around 12\,\textcelsius, a slowly wandering synoptic component
+of amplitude 3\,K, and autocorrelated sensor noise, an AR(1) process with
+coefficient 0.85 and innovation standard deviation 0.12\,K. Into the clean
+series I injected five fault classes with disjoint supports, chosen to match
+the taxonomy of \citet{campbell2013} and \citet{leigh2019}: fourteen isolated
+spikes of 3 to 8\,K in either direction; a step of $+2.5$\,K lasting 36
+hours, the signature of a failed radiation shield; a six hour exact flatline,
+a frozen sensor repeating one value bit for bit; a six hour dithered
+flatline, the same fault with residual jitter of $\pm 0.02$\,K, a sensor
+mechanically stuck while its last digit still moves; and a linear calibration
+drift accumulating $+2.2$\,K over four days. Three neighbouring stations
+share the regional weather but carry their own small local deviations,
+offsets and noise, and remain fault free. Figure~\ref{fig:series} shows the
+result.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\textwidth]{fig_series.png}
+  \caption{The synthetic benchmark. Shaded bands mark the injected segment
+  faults; circles mark the fourteen injected spikes. The clean signal is a
+  diurnal cycle plus synoptic wandering plus AR(1) sensor noise.}
+  \label{fig:series}
+\end{figure}
+
+Scoring is deliberately simple. For spikes, a fault counts as caught when a
+flag lands within one sample of it. For segment faults, I report the
+percentage of faulty points flagged. False alarms are flags on clean points,
+reported per day for one series, because per-day per-series is the unit an
+operator actually experiences.
+
+\subsection{Grubbs' mathematics, verified, and masking, reproduced}
+\label{sec:exp-grubbs}
+
+The first experiment checks Equation~\eqref{eq:grubbscrit} against brute
+force. For each sample size $n$ from 4 to 30, I drew 20\,000 standard normal
+samples, computed the extreme studentised deviate of each, and took the
+empirical 95th percentile. Figure~\ref{fig:grubbs}, left panel, overlays the
+Monte Carlo estimates on the closed-form curve: the largest absolute
+discrepancy across all 27 sample sizes is 0.018, comfortably within Monte
+Carlo error. The formula Grubbs tabulated by hand in the 1960s survives
+20\,000-fold replication without visible strain, which is worth pausing on:
+the paper's tables were the era's entire computational infrastructure, and
+they were right.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\textwidth]{fig_grubbs.png}
+  \caption{Left: two-sided 5\,\% critical values of the Grubbs statistic,
+  exact formula against Monte Carlo with 20\,000 draws per sample size.
+  Right: the masking experiment. A planted pair of equal outliers defeats
+  the iterated Grubbs test, which flags nothing, while the generalised ESD
+  procedure recovers both.}
+  \label{fig:grubbs}
+\end{figure}
+
+The second experiment reproduces the failure mode \citet{pearson1936}
+predicted on paper. I planted two equal outliers at 10.6 into a tight sample
+of eighteen inliers around 10.0, giving a contaminated sample of twenty. The
+pair inflates the sample standard deviation enough that the largest
+studentised deviate reaches only 2.56, below the two-sided critical value
+of roughly 2.71 at $n = 20$, so Grubbs' test, applied one observation at a
+time, flags nothing at all and stops immediately. Rosner's generalised ESD
+procedure with $r = 4$, which computes all four successive statistics before
+deciding, finds the first statistic insignificant and the second one large,
+and correctly declares exactly two outliers \citep{rosner1983}. The masking
+literature is sometimes presented as a curiosity; on this evidence it is a
+two-line trap that any pipeline applying a fixed-critical sequential test
+will eventually fall into.
+
+\subsection{The robust score does what it promises}
+\label{sec:exp-ih}
+
+The same twenty-point sample separates the classical and modified z-scores
+cleanly. Figure~\ref{fig:modz} plots both scores for every observation. The
+planted pair never reaches the classical rule of thumb, $\lvert z \rvert$
+peaks at 2.56 because the outliers corrupt both the mean and the standard
+deviation used to judge them, while the modified z-score of
+Equation~\eqref{eq:modz}, whose median and MAD ignore the pair almost
+entirely, assigns them $\lvert M \rvert = 5.17$, well beyond the 3.5 rule of
+\citet{iglewicz1993}. On its home ground, a single contaminated batch, the
+booklet's recommendation behaves exactly as advertised, and the experiment
+needed eleven lines of code. The interesting question is what happens when
+the score leaves home, which is the next experiment.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\textwidth]{fig_modz.png}
+  \caption{Classical and modified z-scores on the masking sample. The robust
+  score isolates the planted pair; the classical score never clears its own
+  threshold.}
+  \label{fig:modz}
+\end{figure}
+
+\subsection{The threshold does not transfer}
+\label{sec:exp-threshold}
+
+Operational spike detectors, including the one in the system I worked on,
+apply the modified z-score not to a batch but to a short window sliding
+along the stream, and they run it with thresholds far above 3.5, values
+like 30 at five minute resolution or 300 at hourly resolution appear in
+production configurations. The literature gives no derivation for such
+values, so I measured what the choice actually trades. For centred windows of
+7, 25 and 97 samples, I swept the threshold from 2 to 400 and recorded, on
+the benchmark, the false alarm rate on clean points and the recall of the
+fourteen injected spikes. Figure~\ref{fig:thresholds} shows both curves.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\textwidth]{fig_thresholds.png}
+  \caption{Rolling modified z-score on the benchmark: false alarms per day
+  (top) and spike recall (bottom) as functions of the threshold, for three
+  window lengths. The dashed line marks the textbook 3.5; the shaded band
+  marks the range of thresholds found in operational configurations.}
+  \label{fig:thresholds}
+\end{figure}
+
+Three results stand out. First, the textbook constant is noisy here: at
+window 7 the 3.5 rule catches all fourteen spikes but pays 1.63 false alarms
+per day on a single clean series. That sounds modest until it meets network
+arithmetic: across a hundred series it is over 160 nuisance flags a day
+landing on whoever reads the reports, precisely Anscombe's premium, now
+payable in reviewer attention. Second, the operational values silence the
+false alarms and quietly give up detection: at threshold 30 the same
+detector catches 9 of 14 spikes, 64\,\%, and the misses are not tail cases
+but ordinary 3 to 5\,K spikes. Third, and most useful, no setting wins. At
+window 7 full recall survives only up to a threshold of about 4, while
+false alarms persist until about 18; at window 25 the two boundaries are
+2.5 and 5; at window 97 the detector cannot reach full recall at any
+threshold, topping out at 64\,\%, because an eight hour window swallows so
+much diurnal variation that its MAD dwarfs a moderate spike. There is no
+clean operating window anywhere in the plane I searched: on this benchmark
+the statistic itself, a robust score built for exchangeable batches and
+applied to an autocorrelated stream, cannot deliver both silence and full
+detection, and no threshold can be tuned into fixing that. The practical
+moral is sharper than the usual advice to choose thresholds carefully: the
+window, the threshold, the sampling interval and the noise scale form one
+coupled design problem, and a constant carried from a 1993 booklet, or from
+another network's configuration file, is a measurement about someone else's
+data.
+
+\subsection{The battery against the fault classes}
+\label{sec:exp-battery}
+
+The final experiment runs the whole lineage side by side: the two global
+batch methods, the rolling modified z-score at both the textbook and an
+operational threshold, and one representative of each family in
+Equations~\eqref{eq:range} to~\eqref{eq:regression}, a step test at 3\,K per
+five minutes, persistence tests in both the naive equality form and the
+variance form of Equation~\eqref{eq:persistence}, a spatial test flagging
+departures beyond three residual standard deviations from the offset-adjusted
+neighbour median, and a one-step-ahead regression detector in the spirit of
+Equation~\eqref{eq:regression}, forecasting each value from its predecessor
+plus a climatological time-of-day increment learned from the first five
+days. Figure~\ref{fig:detectors} reports the full matrix of recall by fault
+class alongside each detector's false alarm rate.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\textwidth]{fig_detectors.png}
+  \caption{Share of faulty points flagged, by detector and fault class, with
+  false alarms per day in the right margin. Every row is one implemented
+  detector run over the identical benchmark.}
+  \label{fig:detectors}
+\end{figure}
+
+The matrix compresses several of the reading list's central claims into one
+picture. The two global batch methods, Grubbs' test applied to the month as
+if it were a sample and the modified z-score used the same way, flag nothing
+whatsoever: not one of the fourteen spikes, some of them 8\,K excursions,
+because a month of diurnal cycling inflates the scale estimate until nothing
+looks surprising. This is the cleanest possible demonstration that the
+assumption, exchangeability, dominates the formula. The step test catches
+every spike cheaply but sees a level shift only at its two edges, flagging
+2 of 432 points of the step segment, and is blind to everything slow or
+still, exactly the profile its 1990s designers understood. The persistence
+pair stages the report's neatest lineage result: run detection by exact
+equality catches the bit-for-bit flatline perfectly and the dithered
+flatline not at all, while the variance form used by the Mesonet,
+Equation~\eqref{eq:persistence}, catches both without a single false alarm.
+A sensor that is stuck but still twitching in its last digit defeats the
+naive implementation and not the 2000 design; the fix was in the reading
+list all along, a point with direct relevance to any modern reimplementation
+that reaches for \texttt{value != previous} out of habit.
+
+The spatial test is the matrix's quiet winner: every spike, essentially the
+whole step, four fifths of both flatlines, and, uniquely in the battery,
+one third of the drift, all at 0.1 false alarms per day. It sees the drift
+only from the point the accumulated offset crosses its band, roughly two
+days in, which is the honest shape of spatial detection: redundancy buys
+sensitivity to exactly the faults that leave a single series looking
+internally plausible, at the price of latency proportional to the fault's
+slowness. The one-step regression detector catches all spikes and the step's
+entry, and nothing of the drift, reproducing in miniature the type-resolved
+finding of \citet{leigh2019} that one-step-ahead surprise is the wrong
+instrument for slow degradation, since a drifting sensor surprises no one
+from one observation to the next. And the rolling modified z-score rows
+restate Section~\ref{sec:exp-threshold} in company: at 3.5 it is the most
+trigger-happy row of the battery, while at 30 it misses over a third of the
+spikes, faults the far simpler step test catches in full.
+
+No single row dominates, so the last row of Figure~\ref{fig:detectors}
+measures the obvious composition: the union of the step test, the variance
+persistence test and the spatial test. It catches every spike, the entire
+step and both flatlines completely, retains the spatial test's one third of
+the drift, and costs 0.6 false alarms per day, less than any competitive
+single detector achieves on its own. A battery of three cheap, transparent
+rules from the 1990s outperforms every individual method in the table,
+including the statistically fancier ones. That is, in one figure, why
+\citet{shafer2000} shipped a battery rather than a test, why
+\citet{campbell2013} organise checks as a sequential pipeline, and why
+\citet{leigh2019} end by recommending ensembles; the only fault class the
+union leaves substantially uncovered, slow drift, is exactly the class the
+whole literature agrees is hardest, and the case for the model-based methods
+of the current era rests on it.
+
+\subsection{What this exercise cannot show}
+\label{sec:exp-limits}
+
+The benchmark is kind to every detector in it. Its clean process is
+stationary in a way no real month of weather is, its faults are crisp,
+disjoint and generously sized, there are no missing values, no fouling that
+mimics real signals, no storms that mimic faults, and its neighbour stations
+agree more politely than real terrain ever allows. The absolute numbers
+above, 1.63 false alarms per day, 64\,\% recall, 0.018 agreement, are
+therefore properties of the benchmark, not of nature, and only the ordering
+of methods and the shape of the trade-offs should travel. I also set the
+battery's constants myself, the 3\,K step limit, the 0.02\,K variance floor,
+the three sigma spatial band, by exactly the kind of judgement this report
+criticises elsewhere, which is worth admitting: within an afternoon of
+experiment design I had reproduced not only the methods of the reading list
+but its epistemic situation, thresholds chosen by a person who believed they
+were reasonable. Finally, the feature-based branch of \citet{talagala2019}
+is discussed but not implemented here; its extreme value machinery deserves
+a fuller treatment than a synthetic benchmark with fourteen events can
+support.

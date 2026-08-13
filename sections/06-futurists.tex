@@ -1,0 +1,113 @@
+\section{Futurists: where the ideas went}
+\label{sec:futurists}
+
+\subsection{What the citation record says}
+\label{sec:fut-citations}
+
+Figure~\ref{fig:citations} plots the annual citation counts of the four
+journal items, taken from OpenAlex on 19 August 2026; absolute counts differ
+between bibliographic databases, so only one source is used and only shapes
+and orders of magnitude are read from it. The shapes are eloquent. Grubbs'
+1969 paper has accumulated about 3\,700 citations and still attracts roughly
+170 to 230 a year, more than half a century after publication, a pattern
+bibliometricians associate with method classics that outlive their original
+field: the citing literature today is dominated not by statistics but by
+chemistry, medicine, engineering and environmental science, wherever a
+laboratory needs a named, defensible way to discard a measurement. The
+applied line is smaller and steeper. Shafer and colleagues stand at roughly
+290 citations, a steady trickle from every group that builds a network and
+discovers it needs quality assurance; Campbell and colleagues at about 130;
+and Leigh and colleagues, youngest of the five, already at about 130 and
+cited more in each recent year than either applied predecessor, a
+straightforward sign of where the field's active margin now lies.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\textwidth]{fig_citations.png}
+  \caption{Citations per year for the four journal items on the reading
+  list, from OpenAlex, accessed 19 August 2026. Note the different vertical
+  scales: the left panel shows a statistics classic in steady state, the
+  right panel the applied succession.}
+  \label{fig:citations}
+\end{figure}
+
+\subsection{From paper to standard to reflex}
+\label{sec:fut-standards}
+
+Each reading hardened into infrastructure along its own path. Grubbs' tests
+were written into standards, most visibly the ASTM practice on dealing with
+outlying observations, and into the reference handbooks and statistical
+software through which most users now meet them, usually without reading the
+paper. Rosner's generalised ESD travelled the same road as the recommended
+repair. The modified z-score of Iglewicz and Hoaglin diffused further and
+lost more provenance on the way: it appears in engineering handbooks,
+anomaly detection libraries and sensor processing toolkits, frequently with
+the 0.6745 misplaced or the 3.5 quoted as if it were a law of nature, and
+its origin in a slim quality control booklet is remembered mainly by those
+who go looking. Ideas that succeed operationally tend to decay into reflexes;
+the constants survive while the caveats fall away, which is exactly how a
+batch screening rule ended up running, with inherited thresholds, inside
+five minute data streams.
+
+The Mesonet's blueprint became the template for surface network quality
+assurance worldwide. Its own authors published a ten year retrospective
+extending the battery and the flag taxonomy \citep{fiebrich2010}, syntheses
+such as \citet{estevez2011} codified the same test families as recommended
+practice for automatic weather stations, and the architecture, automated
+graded flags feeding a small human review loop, reappears in national
+climate reference networks, agrometeorological services and hydrological
+agencies on every continent. Campbell and colleagues' framework was absorbed
+even more directly: the observatory generation that followed, most visibly
+NEON, built automated plausibility, gap and consistency testing into its
+design from the start \citep{taylor2013}, and the paper's vocabulary,
+quality assurance versus quality control, provisional versus validated
+products, flags carried as data, is now simply how environmental data
+producers speak. My own internship system, with its ordered battery of
+range, persistence, step, consistency and neighbour checks writing graded
+quality codes for later human validation, is a faithful instance of this
+lineage, which is precisely why I chose these readings.
+
+\subsection{The current frontier}
+\label{sec:fut-frontier}
+
+The decade since Leigh and colleagues splits, on my reading, into three
+active fronts. The first is software consolidation. The methods of the 2019
+framework and its companion papers shipped as R packages, and the same years
+produced PyHydroQC, which pairs detection with model-based correction of
+aquatic sensor data \citep{jones2022}, and SaQC, a configuration-driven
+quality control engine from the German environmental research community
+built so that an agency's entire QC policy is a version-controlled,
+executable document \citep{schmidt2023}. This is the quiet but consequential
+shift: quality control moving from bespoke scripts toward shared, citable,
+configurable infrastructure, which is also the only realistic route by which
+threshold provenance, the lineage's weakest joint, becomes auditable.
+
+The second front is machine learning. The anomaly detection literature has
+exploded, with deep sequence models, autoencoders and attention
+architectures dominating the methods venues; \citet{blazquez2021} give the
+panoramic taxonomy. Contact with operational environmental QC remains
+thinner than the volume of papers suggests, for reasons the reading list
+makes predictable: agencies need per-flag explanations, stable behaviour
+under distribution shift, and error rates they can budget, and they possess
+few labelled faults to train on, since the whole point of a good QA system
+is that confirmed faults are rare. The methods that are crossing over do so
+on the lineage's own terms, as additional members of an ensemble whose
+verdicts still flow through flags and human review, exactly the pattern
+\citet{leigh2019} recommended. I read the current enthusiasm for time series
+foundation models the same way: plausibly a better one-step forecaster
+inside Equation~\eqref{eq:regression}, not a replacement for the
+architecture around it.
+
+The third front is the one my thesis question lives on: making the reference
+set itself empirical. Distance-based neighbour selection, inherited from the
+Barnes era, is giving way to selection by observed statistical agreement;
+fixed plausibility bands are giving way to bands learned from a station's own
+validated history; and the field is slowly acquiring what it has always
+lacked, public labelled benchmarks on which detectors can be compared the
+way Leigh and colleagues compared them privately. Add the unresolved
+questions of correction, when a flagged value may be replaced by an estimate
+and how that estimate's uncertainty is carried downstream, and of false
+alarm budgeting as an explicit design quantity, and the research programme
+for the next decade is visible in outline. None of it retires the 1969
+paper, the 1993 booklet, the 2000 architecture or the 2013 framework; it
+runs on top of them.
