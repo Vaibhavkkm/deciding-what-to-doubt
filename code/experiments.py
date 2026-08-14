@@ -253,6 +253,13 @@ def tolerant_hits(flags, mask, tol=1):
         conv[s:] |= flags[:-s]
     return conv & mask
 
+# the union battery: one representative of each complementary family
+detectors["Union: step + persistence + spatial"] = (
+    detectors["Step test, 3 K per 5 min"]
+    | detectors["Persistence, variance"]
+    | detectors["Spatial, neighbour median"]
+)
+
 results = {}
 days = N / 288
 for name, fl in detectors.items():

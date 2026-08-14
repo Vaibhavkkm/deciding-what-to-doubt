@@ -70,5 +70,13 @@
   "flat_dither": 0.0,
   "drift": 0.0,
   "fa_per_day": 0.5666666666666667
+ },
+ "Union: step + persistence + spatial": {
+  "spike": 100.0,
+  "step": 100.0,
+  "flat_exact": 100.0,
+  "flat_dither": 100.0,
+  "drift": 32.37847222222222,
+  "fa_per_day": 0.6
  }
 }
