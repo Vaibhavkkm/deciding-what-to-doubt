@@ -1,0 +1,59 @@
+\section{Synthesis}
+\label{sec:synthesis}
+
+Read together, the five works tell a story that none of them tells alone.
+The statistic barely changed: from Peirce's residuals to Grubbs' studentised
+deviate to the modified z-score to a forecast innovation, the measure of
+surprise has been a scaled distance from expectation for 170 years. What
+changed, era by era, is the expectation. Theory supplied it first, in the
+form of a parametric null; robust statistics let the data supply their own
+resistant version of it; the operational era replaced distributions with
+engineering knowledge, instrument limits, climatology and the testimony of
+neighbouring sensors; the framework era made the expectation institutional,
+a versioned archive of what healthy instruments have done before; and the
+current era learns it, from models and labelled history. Automated quality
+control matured not by inventing better mathematics of surprise but by
+enriching the definition of the unsurprising.
+
+The second thread is less flattering and more useful. At every stage, the
+threshold, the constant that converts a score into a verdict, has been the
+component with the weakest justification and the longest life. Grubbs'
+alpha was principled but assumed a world without autocorrelation; the 3.5 of
+Iglewicz and Hoaglin was calibrated for batches and then wandered into
+streams; the Mesonet's constants were judgements that hardened into
+defaults; and my own experiments show, on a benchmark where the truth is
+known, that no threshold can rescue a statistic from a broken assumption,
+while window, threshold, sampling interval and noise scale must be designed
+together or not at all. If I could add one sentence to every paper on this
+list, it would be the same sentence: report what your thresholds cost, in
+false alarms per reviewer per day and in faults foregone, because that
+premium, Anscombe's premium, is the real currency of monitoring.
+
+The third thread is architectural, and it is the lineage's quiet triumph.
+Everything that survived is a composition: batteries rather than single
+tests, because Figure~\ref{fig:detectors} is what single tests look like;
+flags rather than deletions, because doubt is information; graded data
+products rather than one truth, because users differ in their tolerance for
+being wrong; and a human at the end, not because algorithms are weak but
+because a flag is a message, and messages need readers. The 2019 framework,
+for all its statistical sophistication, ships the same architecture as the
+2000 one. I expect the learning era to do the same, and the works on this
+list are why I expect it.
+
+What I take back to my own work is concrete. The variance form of the
+persistence test, in the reading list since 2000, dominates the equality
+form my generation reaches for by reflex. The spatial check is the only
+member of the battery that sees slow drift, and its latency is the price of
+that sight, so it must be budgeted, not resented. The modified z-score is a
+fine statistic attached to a constant that must be re-derived for every
+sampling regime, and I now know what re-deriving it looks like. And every
+constant I set from now on gets a written provenance, because I have spent a
+semester on the other side of that omission, reverse-engineering the
+judgements of people who, like the authors on this list, were sure at the
+time that their reasons were too obvious to record.
+
+Deciding what to doubt turns out to be the least automatable step in an
+automated system. The five works on this reading list built, over 170
+years, the machinery that makes the decision cheap, repeatable and mostly
+right; what they hand to my generation is the remaining, harder task of
+making it accountable.

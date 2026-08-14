@@ -1,0 +1,132 @@
+\section{Reproducibility and code}
+\label{app:code}
+
+\begin{sloppypar}
+Every number and figure in Section~\ref{sec:experimentalists} is produced by
+two short Python scripts. The first, \texttt{experiments.py}, listed in full
+below, builds the benchmark, implements the detectors, runs the battery, the
+threshold sweep, the Monte Carlo verification and the masking experiment.
+It writes its outputs to \texttt{results.json} and \texttt{bench.npz}. The
+second, \texttt{figures.py}, listed in Appendix~\ref{app:figcode}, reads
+those files and renders the seven figures. The environment was Python~3 with
+NumPy~2.4, SciPy~1.17 and Matplotlib~3.10. All random number generators are
+explicitly seeded, so running
+\end{sloppypar}
+
+\begin{center}
+\texttt{python3 experiments.py \&\& python3 figures.py}
+\end{center}
+
+reproduces this report's figures and statistics bit for bit. Two remarks on
+the implementation. The rolling statistics are written as plain loops rather
+than vectorised expressions; on 8\,640 observations this costs seconds and
+keeps each detector readable as a direct transcription of its defining
+equation. And the detectors deliberately share no state: each receives the
+raw series and returns a boolean flag vector, so the comparison in
+Figure~\ref{fig:detectors} cannot be contaminated by ordering effects.
+
+\lstinputlisting[style=py, caption={\texttt{experiments.py}: benchmark,
+detectors, evaluation and verification experiments.},
+label={lst:experiments}]{code/experiments.py}
+
+\clearpage
+\section{Benchmark and detector parameters}
+\label{app:params}
+
+Tables~\ref{tab:benchparams} and~\ref{tab:detparams} record every constant
+used in Section~\ref{sec:experimentalists}, in the spirit of the threshold
+provenance discipline argued for in Section~\ref{sec:critics}: each value is
+a choice of mine, made once, written down here, and inherited by nothing.
+
+\begin{table}[h]
+  \centering
+  \small
+  \caption{Constants defining the synthetic benchmark.}
+  \label{tab:benchparams}
+  \begin{tabular}{@{}llp{6.4cm}@{}}
+    \toprule
+    Quantity & Value & Note \\
+    \midrule
+    length & 30 days, $N = 8640$ & five minute sampling \\
+    diurnal cycle & $12 + 5\sin(2\pi(t - 9\,\mathrm{h})/24\,\mathrm{h})$ &
+      afternoon peak, in \textcelsius \\
+    synoptic component & $\pm 3$ K & smoothed random walk, one day boxcar \\
+    sensor noise & AR(1), $\varphi = 0.85$, $\sigma_e = 0.12$ K &
+      marginal s.d.\ about 0.23 K \\
+    spikes & 14 points, 3 to 8 K, both signs & isolated, kept clear of other
+      faults \\
+    step fault & $+2.5$ K for 36 h & starts day 20 \\
+    exact flatline & 6 h, value repeated exactly & starts day 8 \\
+    dithered flatline & 6 h, jitter $\pm 0.02$ K & starts day 24 \\
+    drift fault & linear, $+2.2$ K over 4 days & days 12 to 16 \\
+    neighbours & 3 stations, offsets $+0.8$, $-0.6$, $+0.3$ K &
+      shared weather, own local deviation ($\pm 0.4$ K) and noise \\
+    random seeds & 7 (faults), 11, 12, 21, 22, 23 (stations) &
+      NumPy \texttt{default\_rng} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[h]
+  \centering
+  \small
+  \caption{Constants of the implemented detectors. Every one is a judgement,
+  not a derivation.}
+  \label{tab:detparams}
+  \begin{tabular}{@{}lp{5.2cm}p{5.6cm}@{}}
+    \toprule
+    Detector & Constants & Origin of the choice \\
+    \midrule
+    Grubbs, global, iterated & $\alpha = 0.05$, at most 50 removals &
+      conventional significance level \\
+    modified z, global & threshold 3.5 & \citet{iglewicz1993} \\
+    modified z, rolling & windows 7, 25, 97; thresholds 3.5 and 30;
+      sweep 2 to 400 & textbook value; operational configurations;
+      sweep bounds mine \\
+    step test & 3 K per 5 min & plausible physical bound for air
+      temperature \\
+    persistence, equality & run of 12 samples (1 h) & round number \\
+    persistence, variance & 3 h window, s.d.\ floor 0.02 K &
+      window from Equation~\eqref{eq:persistence} practice; floor below
+      sensor noise \\
+    spatial & offsets from first 3 days; band $3\sigma$ of training
+      residual & three sigma convention \\
+    regression & increments from first 5 days; band $4\sigma$ of training
+      innovations & wider than spatial to absorb forecast error \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[h]
+  \centering
+  \small
+  \caption{Exact values behind Figure~\ref{fig:detectors}: share of faulty
+  points flagged per class (\%) and false alarms per day, from
+  \texttt{results.json}.}
+  \label{tab:exactresults}
+  \begin{tabular}{@{}lrrrrrr@{}}
+    \toprule
+    Detector & spike & step & \begin{tabular}[b]{@{}r@{}}flat\\(exact)\end{tabular}
+      & \begin{tabular}[b]{@{}r@{}}flat\\(dither)\end{tabular} & drift
+      & \begin{tabular}[b]{@{}r@{}}false al.\\per day\end{tabular} \\
+    \midrule
+    Grubbs, global, iterated & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.00 \\
+    modified z, global, 3.5 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.00 \\
+    modified z, rolling $w{=}7$, 3.5 & 100.0 & 0.9 & 0.0 & 2.8 & 1.0 & 1.63 \\
+    modified z, rolling $w{=}7$, 30 & 64.3 & 0.2 & 0.0 & 0.0 & 0.0 & 0.00 \\
+    step test, 3 K per 5 min & 100.0 & 0.5 & 0.0 & 0.0 & 0.0 & 0.50 \\
+    persistence, equality & 0.0 & 0.0 & 100.0 & 0.0 & 0.0 & 0.00 \\
+    persistence, variance & 0.0 & 0.0 & 100.0 & 100.0 & 0.0 & 0.00 \\
+    spatial, neighbour median & 100.0 & 99.8 & 80.6 & 81.9 & 32.4 & 0.10 \\
+    regression, one step ahead & 100.0 & 0.7 & 0.0 & 0.0 & 0.0 & 0.57 \\
+    union: step, persistence, spatial & 100.0 & 100.0 & 100.0 & 100.0 & 32.4 & 0.60 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Figure generation code}
+\label{app:figcode}
+
+\lstinputlisting[style=py, caption={\texttt{figures.py}: reads
+\texttt{bench.npz} and \texttt{results.json}, renders the seven figures.},
+label={lst:figures}]{code/figures.py}
