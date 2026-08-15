@@ -1,0 +1,35 @@
+\clearpage
+\section{Conclusion}
+\label{sec:conclusion}
+
+Read together, the five works tell a simple story. Automated QC did not
+progress by discovering one perfect outlier formula. It progressed by
+building better references for normal behaviour and by combining different
+kinds of evidence.
+
+Three conclusions matter most to me.
+
+First, a score, a reference and a threshold should be treated as separate
+design choices. A familiar score is not automatically valid when it is moved
+from an independent batch to a correlated sensor window.
+
+Second, thresholds need provenance. A number such as 3.5, 30 or a physical
+step limit is only meaningful together with the data, sampling rate, window
+and trade-off for which it was chosen. The threshold should be documented
+and re-evaluated when those conditions change.
+
+Third, combinations beat single detectors. On the synthetic benchmark, a
+simple battery of step, variance-persistence and spatial checks detects every
+spike, the entire level shift and both frozen-sensor faults, while retaining
+partial sensitivity to drift. Each check is transparent enough to explain to
+an operator, and together they cover one another's blind spots.
+
+The final lesson is therefore not to automate doubt away. A good QC system
+makes doubt explicit: it records which rule objected, preserves the original
+measurement, and gives the reviewer enough context to decide what the flag
+means. That is the common architecture connecting the five readings and the
+principle I would carry back into my own work.
+
+% =====================================================================
+% Reproducibility note
+% =====================================================================

@@ -1,0 +1,36 @@
+\clearpage
+\section{Futurist: where the subject is going}
+\label{sec:future}
+
+The recent direction of environmental QC is not the replacement of simple
+checks by one complicated model. It is the addition of better references
+inside the same basic architecture.
+
+First, QC is becoming software infrastructure. Tools such as PyHydroQC and
+SaQC package detection, correction or configuration into reusable systems
+\citep{jones2022,schmidt2023}. This matters because the configuration can
+be versioned and inspected. A threshold is no longer only a number hidden in
+code; it can become an auditable part of the data-quality policy.
+
+Second, model-based anomaly detection is expanding quickly. Reviews such as
+\citet{blazquez2021} describe deep learning and other modern time-series
+methods. Their advantage is that they can learn more complicated versions of
+normal behaviour than a fixed range or step limit. Their operational
+challenge is explainability, transfer between sites, and the shortage of
+well-labelled fault data.
+
+Third, references are becoming more empirical. A spatial check can choose
+neighbours based on measured agreement rather than distance alone. Seasonal
+bands can be learned from validated history. Forecasting models can adapt to
+a site's own behaviour. These changes improve the reference for ``normal'',
+which is the part of the QC problem that has changed most across the five
+readings.
+
+I therefore expect future systems to remain hybrid: simple physical rules for
+clear failures, robust and model-based methods for subtler problems, graded
+flags, and human review for ambiguous cases. Better machine learning may
+improve one member of the battery without removing the need for the battery.
+
+% =====================================================================
+% 6. Critic
+% =====================================================================

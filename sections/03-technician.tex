@@ -1,0 +1,208 @@
+\clearpage
+\section{Technician: how the methods work}
+\label{sec:methods}
+
+\subsection{One idea behind the methods}
+
+For a batch of readings $x_1,\ldots,x_n$, let $\bar{x}$ be the mean, $s$ the
+standard deviation, $\tilde{x}$ the median, and
+\[
+\mathrm{MAD}=\operatorname{median}_i |x_i-\tilde{x}|.
+\]
+For a time series, $x_t$ denotes the value at time $t$.
+
+Most methods in this report can be described by three parts:
+
+\begin{enumerate}
+  \item a \textbf{score} that says how unusual a reading is;
+  \item a \textbf{reference} that describes normal behaviour;
+  \item a \textbf{threshold} that converts the score into a flag.
+\end{enumerate}
+
+Keeping these parts separate is useful. A method can have a sensible score
+but a poor reference, or a good reference but an unsuitable threshold.
+
+\subsection{Classical and robust outlier scores}
+
+Grubbs' statistic for the most extreme observation is
+\begin{equation}
+G=\frac{\max_i |x_i-\bar{x}|}{s}.
+\label{eq:grubbs}
+\end{equation}
+The null hypothesis is that all observations come from one normal
+population. A critical value is calculated from the sample size and chosen
+significance level \citep{grubbs1969}. This is appropriate when the sample
+matches the assumptions. A sensor stream with a daily cycle and strong
+temporal correlation does not look like one independent normal batch.
+
+The modified z-score replaces the fragile mean and standard deviation by the
+median and MAD:
+\begin{equation}
+M_i=\frac{0.6745(x_i-\tilde{x})}{\mathrm{MAD}}.
+\label{eq:modz}
+\end{equation}
+Iglewicz and Hoaglin recommend flagging observations with
+$|M_i|>3.5$ as a practical screening rule \citep{iglewicz1993}. The score is
+robust to a few extreme values, but the behaviour still depends on which
+observations are placed in the window and on the threshold used.
+
+\subsection{Operational checks}
+
+Automatic environmental QC normally uses several simple checks rather than
+one statistical test. Table~\ref{tab:checks} gives the small set used in this
+report.
+
+\begin{table}[h]
+\centering
+\small
+\caption{The main checks, what they ask, and their main limitation.}
+\label{tab:checks}
+\begin{tabular}{@{}p{2.7cm}p{5.2cm}p{6.0cm}@{}}
+\toprule
+Check & Basic question & Main limitation \\
+\midrule
+Range & Is the value physically or instrumentally possible? & Cannot see plausible but wrong values. \\
+Step & Did the value change more than a chosen amount between samples? & Misses slow drift and small level shifts. \\
+Persistence & Has the sensor stopped changing? & Exact equality misses a stuck sensor with small last-digit jitter. \\
+Internal consistency & Do related quantities at one station obey physical relationships? & Shows a contradiction but not necessarily which sensor is wrong. \\
+Spatial consistency & Does the station agree with nearby stations after normal offsets are allowed for? & Can flag real local weather; depends on having suitable neighbours. \\
+Outlier score & Is the reading unusual relative to a batch or moving window? & Depends strongly on the reference window and its assumptions. \\
+Forecast & Is the reading far from what recent history predicted? & One-step forecasts often absorb slow drift and persistent faults. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The checks should be read as different kinds of evidence. A range check uses
+instrument knowledge. A step or persistence check uses the recent behaviour
+of the same series. Internal consistency uses physics. Spatial consistency
+uses redundancy across stations. Forecasting uses a fitted model of the
+past. Their weaknesses are different, which is exactly why a battery can be
+stronger than one check.
+
+\subsection{Persistence as a useful example}
+
+A stuck sensor can be tested in two ways. The simple implementation looks
+for an exact run of repeated values:
+\begin{equation}
+\text{flag if }x_t\text{ belongs to a run of at least }n_{\mathrm{run}}
+\text{ identical values.}
+\end{equation}
+A more robust version looks for a collapse in variability:
+\begin{equation}
+\text{flag window }W_t\iff \operatorname{sd}\{x_u:u\in W_t\}<s_{\min}.
+\end{equation}
+The second form is closer to the operational idea in \citet{shafer2000}.
+It catches both a perfectly frozen value and a sensor that remains stuck but
+jitters slightly in the last digit. This small example illustrates a wider
+lesson: the exact definition of a check matters as much as its name.
+
+\subsection{How a QC system should use the verdicts}
+
+A useful QC pipeline should keep the original measurement and attach a
+verdict or quality code rather than silently overwrite the data. A failed
+range check may make a value unusable for later calculations, but the value
+and the reason for rejecting it should remain auditable. Other checks usually
+produce flags for later review because disagreement may represent either a
+fault or a real event \citep{shafer2000,campbell2013}.
+
+The order can also matter. Cheap checks can run before expensive spatial or
+model-based checks, and clearly invalid values should not be used as evidence
+for later checks. The important principle is transparency: the user should
+be able to tell which check objected and why.
+
+
+\subsection{The checks in plain language}
+
+The table above is useful as a summary, but the checks are easier to explain
+with one simple example each. I keep the descriptions here deliberately
+practical, because these are the questions I would use when explaining the
+system to an operator or to a reviewer.
+
+\paragraph{Range check.}
+Suppose an air-temperature sensor reports $-999$\,\textcelsius. The number
+is not merely unusual; it is outside the operating range of the sensor and
+outside any realistic environmental range. A range check compares the value
+with a lower and upper limit and flags it immediately. This check is cheap
+and easy to defend. Its weakness is that most real faults remain inside
+plausible limits. A sensor that is wrong by 2\,K may still pass perfectly.
+
+\paragraph{Step check.}
+A step check asks whether two consecutive readings differ by more than a
+chosen limit. For five-minute temperature data, a sudden jump of several
+kelvin may be suspicious. This is good for spikes and abrupt failures. It is
+not good for slow problems. A sensor that drifts by a tiny amount at every
+sample can become badly wrong while never making one large step.
+
+\paragraph{Persistence check.}
+A persistence check looks for a sensor that has stopped responding. The
+simplest version searches for exactly repeated values. That works if the
+instrument sends the same number again and again. A more realistic faulty
+sensor may still move in its last digit, so a low-variability version is
+safer: instead of asking whether all values are identical, it asks whether
+the variation inside a window has become abnormally small.
+
+\paragraph{Internal-consistency check.}
+Some quantities are related by physics. Dew-point temperature should not
+normally exceed air temperature, and daily minimum temperature should not be
+higher than daily maximum temperature. When two related quantities break a
+physical relationship, at least one reading deserves attention. The limit
+of the check is that it can show a contradiction without always identifying
+which sensor caused it.
+
+\paragraph{Spatial-consistency check.}
+Nearby stations provide an external reference. If one station suddenly moves
+away from several healthy neighbours while the neighbours continue to agree,
+the station is suspicious. This is particularly useful for level shifts,
+stuck sensors and drift. However, local weather can be real. A thunderstorm
+may affect one station and not another, so disagreement is evidence for
+review, not proof that a sensor is wrong.
+
+\paragraph{Outlier-score check.}
+An outlier score asks how far a reading lies from the centre of a reference
+set. Grubbs uses the mean and standard deviation; the modified z-score uses
+the median and MAD. These scores are useful only when the reference set makes
+sense. A whole month of temperature contains a daily cycle, while a very
+short window may be noisy. The main design question is therefore not only
+``which score?'' but also ``which observations define normal?''
+
+\paragraph{Forecast check.}
+A forecast method predicts the next reading from recent history and flags a
+large prediction error. A sudden spike is difficult to predict and therefore
+easy to flag. Slow drift is different: if the model keeps updating from the
+recent past, it can follow the drifting sensor and stop being surprised. The
+method is therefore useful evidence for sudden changes, not a complete
+solution to every fault.
+
+These seven checks can be grouped into three simple sources of evidence.
+Range and internal-consistency checks use physical knowledge. Step,
+persistence, outlier and forecast checks use the behaviour of the same time
+series. Spatial checking uses other stations. A strong QC system combines
+these sources rather than asking one source to do everything.
+
+\subsection{A simple running example}
+
+Consider one station reporting air temperature every five minutes. At
+10:00 it reports 12.1\,\textcelsius, at 10:05 it reports
+12.2\,\textcelsius, and at 10:10 it reports 18.5\,\textcelsius. A range check
+may accept all three values because 18.5\,\textcelsius is physically
+possible. A step check may flag 10:10 because the jump is too large. A
+rolling outlier score may also flag it because it is far from the recent
+window. If neighbouring stations remain around 12\,\textcelsius, the spatial
+check adds independent evidence that the value is suspicious.
+
+Now consider a different failure. The sensor begins at 12.0\,\textcelsius
+and then reports 12.01, 12.00, 12.02 and 12.01 for several hours while the
+real temperature changes normally. The range check passes it and the step
+check sees nothing unusual. Exact repetition may also miss it because the
+values are not identical. A low-variability persistence check can detect the
+collapse in movement, and the spatial check can detect the growing
+disagreement with neighbouring stations.
+
+These two examples explain why the pipeline needs several checks. The first
+fault is sudden and visible in the local series. The second fault remains
+plausible and requires a different definition of persistence or an external
+reference. The checks are therefore complementary rather than competing.
+
+% =====================================================================
+% 4. Experimentalist
+% =====================================================================

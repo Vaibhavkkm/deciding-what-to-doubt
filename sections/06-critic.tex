@@ -1,0 +1,58 @@
+\clearpage
+\section{Critic: what the readings leave unresolved}
+\label{sec:critic}
+
+The five readings are useful precisely because their weaknesses are
+different. Rather than criticising each paper at length, I reduce the issues
+to four questions that matter for implementation.
+
+\subsection{Where did the threshold come from?}
+
+Grubbs' critical value is theoretically defined once a significance level is
+chosen, but it assumes a particular statistical setting. The modified
+z-score threshold 3.5 is an empirical screening recommendation for batches
+\citep{iglewicz1993}. Operational range, step and persistence limits are
+often engineering judgements \citep{shafer2000}. In practice these numbers
+can survive longer than the reasons behind them.
+
+My experiment makes this concrete. A threshold can reduce false alarms by
+sacrificing detection, but there is no single number that fixes a mismatch
+between the method and the data. A deployment should therefore record the
+source of every threshold, the sampling rate and window for which it was
+chosen, and the measured false-alarm/missed-fault trade-off.
+
+\subsection{What does the reviewer experience?}
+
+The operational papers correctly keep a human in the loop, but they say less
+about the workload created by false alarms. A method that produces one
+nuisance flag per day on one series may produce hundreds on a large network.
+At that scale, the cost is not only statistical; it is the attention of the
+person reading the flags. Anscombe's old idea of treating rejection as an
+insurance trade-off is still useful here \citep{anscombe1960}.
+
+\subsection{Can a fault be separated from a real anomaly?}
+
+Campbell and colleagues make this distinction explicit
+\citep{campbell2013}. A sensor fault is something wrong with the instrument;
+an anomaly may be a scientifically important event. Range checks are easy to
+explain because impossible values are unlikely to be real. Spatial and model
+checks are harder because a local storm or an unseen regime change can look
+like a fault. This is a strong reason to keep flags and provenance instead
+of automatically deleting data.
+
+\subsection{Does the method transfer to a new site?}
+
+Leigh and colleagues evaluate methods on expert-labelled data from a limited
+number of settings \citep{leigh2019}. That is much stronger than testing on
+unlabelled data, but a method that works at one site may still require new
+thresholds or new training at another. The same issue appears in my
+benchmark: the exact results are only valid for the simulated sampling rate,
+noise and faults. Transferability should therefore be tested rather than
+assumed.
+
+These criticisms lead to one practical recommendation: QC should be treated
+as a documented decision system, not merely as a list of functions. Each
+check should state what evidence it uses, what assumptions it makes, where
+its threshold came from, and what happens after it fires.
+
+

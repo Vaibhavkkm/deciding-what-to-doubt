@@ -1,0 +1,291 @@
+\clearpage
+\section{Experimentalist: testing the methods}
+\label{sec:experiment}
+
+\subsection{Benchmark design}
+
+Real sensor archives rarely provide a certain answer about every reading. To
+compare methods directly, I built a synthetic month of air temperature with
+30 days of five-minute samples, giving 8640 readings. The clean signal
+contains a daily cycle, a slower weather component and correlated sensor
+noise. I then inserted five fault types based on the fault categories
+discussed by \citet{campbell2013} and \citet{leigh2019}:
+
+\begin{itemize}
+  \item 14 sudden spikes between 3 and 8 K;
+  \item a $+2.5$ K level shift lasting 36 hours;
+  \item a frozen sensor for 6 hours with exact repetition;
+  \item a frozen sensor for 6 hours with $\pm0.02$ K jitter;
+  \item a slow calibration drift reaching $+2.2$ K over four days.
+\end{itemize}
+
+Three healthy neighbouring stations share the same broad weather pattern but
+have their own offsets and noise. Random-number generators are seeded, so the
+benchmark and figures are exactly reproducible.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.95\textwidth]{fig_series.png}
+  \caption{Synthetic temperature benchmark. Shaded regions are segment
+  faults; circles mark the injected spikes.}
+  \label{fig:series}
+\end{figure}
+
+For spikes, I count a fault as detected if a flag falls within one sample of
+the injected spike. For segment faults, I report the percentage of faulty
+readings flagged. False alarms are flags on clean readings and are reported
+per day for one series.
+
+\subsection{Masking: why a classical test can miss two outliers}
+
+I first reproduced the masking problem. Eighteen values were placed tightly
+around 10.0 and two equal outliers at 10.6 were added. The pair increases the
+sample standard deviation enough that the largest Grubbs statistic is about
+2.56, below the critical value of about 2.71 for this sample. An iterated
+single-outlier Grubbs procedure therefore stops and finds nothing. Rosner's
+generalised ESD, which evaluates several possible removals before deciding,
+finds the two outliers \citep{rosner1983}.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.92\textwidth]{fig_grubbs.png}
+  \caption{Left: Grubbs critical values checked by simulation. Right: the
+  masking example, where a pair defeats the iterated single-outlier test but
+  generalised ESD finds both.}
+  \label{fig:grubbs}
+\end{figure}
+
+This experiment is useful because the failure comes from the reference
+statistics, not from complicated data. Two bad values can change the
+standard deviation used to judge themselves.
+
+\subsection{The modified z-score: a good statistic with a context problem}
+
+On the same small contaminated sample, the robust modified z-score separates
+the two planted outliers because the median and MAD barely move. In that
+setting, the method behaves as intended.
+
+The problem appears when the same score is used in a short moving window over
+a correlated sensor stream. I tested windows of 7, 25 and 97 samples and
+swept the threshold from 2 to 400. At a 7-sample window, the textbook value
+3.5 detects all injected spikes but produces 1.63 false alarms per day for a
+single series. A threshold of 30 removes those false alarms but catches only
+9 of the 14 spikes.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.92\textwidth]{fig_thresholds.png}
+  \caption{False alarms and spike detection as the modified z-score
+  threshold changes. The dashed line is 3.5. No threshold is both silent and
+  complete for the tested windows.}
+  \label{fig:thresholds}
+\end{figure}
+
+The important point is not that 3.5 is ``wrong'' or 30 is ``right''. The
+point is that a threshold calibrated for one data setting should not be
+copied into another without measuring what it costs. Window length, sampling
+rate, noise and threshold form one design problem.
+
+\subsection{Comparing the checks}
+
+I then ran the main implementable checks over the same benchmark. Internal
+consistency is not scored because the benchmark has only one measured
+quantity per station. The feature-based branch from \citet{talagala2019} is
+also not implemented because fourteen events are too few for a meaningful
+evaluation of its extreme-value machinery.
+
+Table~\ref{tab:results} gives the exact comparison. The final row is a simple
+battery that takes the union of the step, variance-persistence and spatial
+checks.
+
+\begin{table}[h]
+\centering
+\small
+\setlength{\tabcolsep}{2.8pt}
+\caption{Percentage of faulty readings flagged, with false alarms per day.}
+\label{tab:results}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Check & Spike & Shift & Exact & Jitter & Drift & False/day \\
+\midrule
+Range & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.00 \\
+Grubbs, whole month & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.00 \\
+Modified z, whole month, 3.5 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.00 \\
+Modified z, win. 7, 3.5 & 100.0 & 0.9 & 0.0 & 2.8 & 1.0 & 1.63 \\
+Modified z, win. 7, 30 & 64.3 & 0.2 & 0.0 & 0.0 & 0.0 & 0.00 \\
+Step, 3 K/5 min & 100.0 & 0.5 & 0.0 & 0.0 & 0.0 & 0.50 \\
+Persistence, exact & 0.0 & 0.0 & 100.0 & 0.0 & 0.0 & 0.00 \\
+Persistence, variance & 0.0 & 0.0 & 100.0 & 100.0 & 0.0 & 0.00 \\
+Spatial, neighbours & 100.0 & 99.8 & 80.6 & 81.9 & 32.4 & 0.10 \\
+Forecast, one-step & 100.0 & 0.7 & 0.0 & 0.0 & 0.0 & 0.57 \\
+\textbf{Battery: step + persist. + spatial} & \textbf{100.0} & \textbf{100.0} & \textbf{100.0} & \textbf{100.0} & \textbf{32.4} & \textbf{0.60} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.95\textwidth]{fig_detectors.png}
+  \caption{The same comparison as a detection matrix. No single check covers
+  all fault types; the battery covers the first four completely and retains
+  the spatial check's partial sensitivity to drift.}
+  \label{fig:detectors}
+\end{figure}
+
+The results are easier to understand by fault type than by method. Spikes
+are easy for step, rolling outlier and forecast checks. Exact persistence is
+perfect for a perfectly frozen sensor but fails completely when the stuck
+value jitters. The low-variability persistence check fixes that problem.
+Spatial comparison is the strongest single detector because healthy
+neighbours provide an external reference. Slow drift remains difficult and
+is detected only after the accumulated difference becomes large enough.
+
+The battery is the practical result I take most seriously. Three simple and
+explainable checks cover more faults than any individual method. This agrees
+with the operational philosophy of \citet{shafer2000} and the combination
+recommended by \citet{leigh2019}.
+
+\subsection{Limits of the experiment}
+
+The benchmark is deliberately cleaner than the real world. It contains no
+missing data, fouling that resembles natural behaviour, or local storms that
+make one healthy station disagree with its neighbours. The neighbouring
+stations are also more cooperative than real stations separated by complex
+terrain. Therefore the exact percentages are properties of this benchmark,
+not universal performance claims.
+
+The constants are also chosen deliberately rather than derived: a 3 K step
+limit, a 0.02 K variability floor, a three-standard-deviation spatial band,
+and a wider forecast band. This is not hidden because it is part of the
+point. A threshold is an engineering choice unless its assumptions and cost
+have been demonstrated for the deployment.
+
+
+\subsection{Reading the results by fault type}
+
+The result table is easier to remember when it is read by fault rather than
+by algorithm. This also matches the practical question an operator has:
+``if this kind of sensor problem happens, which evidence is likely to find
+it?''
+
+\paragraph{Spikes.}
+Spikes are the easiest fault in the benchmark. The step check catches all of
+them because a spike creates an abrupt change. The rolling modified z-score
+at threshold 3.5 and the one-step forecast also catch all of them. Spatial
+comparison catches them because the neighbours remain healthy. This is a
+good example of several independent checks agreeing on the same event.
+Agreement does not make the value mathematically impossible, but it gives a
+reviewer much stronger evidence than one flag alone.
+
+\paragraph{Level shift.}
+The planted level shift is $+2.5$\,K while the step limit is 3\,K per five
+minutes. For that reason the step check is almost blind to it. The forecast
+check notices mainly the entry to the new level and then adapts. Spatial
+comparison performs much better because the target station stays separated
+from the healthy neighbours for the duration of the fault. This illustrates
+the value of an external reference: the station's own recent history may
+accept a new level that its neighbours show to be suspicious.
+
+\paragraph{Frozen sensor with exact repetition.}
+Exact persistence is designed for this case and detects it completely. The
+variance form also detects it because a perfectly repeated value has zero
+spread. Spatial comparison detects most of the period once the real weather
+moves away from the frozen value. The result is straightforward: when a
+fault matches the definition of the check, even a very simple rule can be
+excellent.
+
+\paragraph{Frozen sensor with small jitter.}
+This fault is deliberately almost the same as the previous one, except that
+the last digit moves by $\pm0.02$\,K. That tiny change is enough to defeat
+exact equality. The low-variability persistence check still detects the
+whole fault, because the window is much less variable than a healthy sensor.
+This is one of the clearest lessons in the report: a small implementation
+detail can decide whether an apparently standard check works or fails.
+
+\paragraph{Slow drift.}
+Drift is the difficult column. Each individual change is small, so the step
+check sees nothing. A moving outlier reference and a one-step forecast move
+with the fault, which also makes them weak. Spatial comparison is the only
+implemented check with meaningful sensitivity, and even it detects the drift
+late, after enough disagreement has accumulated. The correct conclusion is
+not that spatial checking solves drift; it is that drift needs a reference
+that does not drift with the faulty sensor.
+
+\paragraph{False alarms.}
+Detection is only half of the result. A check that catches every fault but
+creates many false alarms may be unusable in a large network. At the
+textbook modified-z threshold of 3.5, the rolling detector produces 1.63
+false alarms per day for one series in this benchmark. Multiplying that rate
+by many sensors quickly creates reviewer workload. The battery produces 0.60
+false alarms per day here while covering the first four fault classes
+completely. The exact number is benchmark-specific, but the trade-off is the
+important part.
+
+\subsection{Why the battery is the main practical result}
+
+The battery combines step, variance-persistence and spatial checks. I chose
+these three because their strengths are different and their rules are easy
+to explain. Step handles abrupt movement, variance-persistence handles a
+sensor that stops moving, and spatial comparison supplies an external
+reference. Their union therefore covers faults that any one of them misses.
+
+This does not prove that these three checks are optimal for every network.
+It shows something more modest and more useful: combining transparent checks
+with different failure modes can outperform a more ambitious search for one
+universal anomaly detector. The same principle appears in the operational
+literature, where several checks feed a common flagging and review process.
+
+In a production system I would therefore evaluate a battery in the same way
+as an individual detector. I would measure detection by fault type, false
+alarms per reviewer per day, the number of checks that agree on each event,
+and the cases that still escape all checks. This keeps the evaluation tied
+to the operational decision rather than to one abstract accuracy number.
+
+
+\subsection{Parameters used in the benchmark}
+
+To keep the experiment explainable, the benchmark uses a small number of
+explicit parameters. Table~\ref{tab:simpleparams} collects the ones that
+matter most. These values are not presented as universal recommendations;
+they are the operating point used to compare the methods on the same data.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Main benchmark and detector parameters used in the experiment.}
+\label{tab:simpleparams}
+\begin{tabular}{@{}p{4.4cm}p{3.6cm}p{6.0cm}@{}}
+\toprule
+Item & Value & Reason in this benchmark \\
+\midrule
+Sampling interval & 5 minutes & Matches the high-frequency sensor setting used in the experiment. \\
+Temperature range & $-40$ to $50$\,\textcelsius & Broad physically plausible range; intended only to catch gross errors. \\
+Step limit & 3\,K per 5 minutes & Large enough to ignore ordinary movement but small enough to catch the planted spikes. \\
+Exact persistence & 12 repeated samples & One hour of identical readings. \\
+Variance persistence & 3-hour window; 0.02\,K spread floor & Detects a sensor that is almost constant without requiring exact equality. \\
+Spatial reference & 3 healthy neighbours & Supplies an external reference independent of the faulty target sensor. \\
+Spatial band & 3 standard deviations & Simple conventional operating point for the comparison. \\
+Modified z-score & windows 7, 25, 97 & Shows how the same score changes when its reference window changes. \\
+Forecast training & first 5 days & Gives the simple forecaster repeated examples of the daily pattern. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+There are two reasons for writing these values down. First, a result cannot
+be reproduced if the threshold and window are hidden. Second, the meaning of
+a threshold depends on its context. A 3\,K step limit is a statement about
+a five-minute sampling interval; it would mean something different for
+hourly data. A persistence window that is reasonable for air temperature may
+be far too short for deep soil temperature. Even a standard-deviation band
+changes meaning when the noise and the training period change.
+
+For this reason I treat the parameter table as part of the method rather
+than as implementation detail. If the system were deployed at another site,
+I would keep the checks but re-evaluate the values using validated local
+data, instrument specifications and an acceptable false-alarm budget. This
+is also why the experiment reports the parameters beside the results instead
+of presenting the percentages as if they came from the algorithms alone.
+
+% =====================================================================
+% 5. Futurist
+% =====================================================================

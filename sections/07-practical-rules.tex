@@ -1,0 +1,92 @@
+\section{Practical design rules from the readings}
+\label{sec:practical}
+
+The literature and the experiment can be reduced to a small set of design
+rules. I include them because they are easier to apply than a list of
+algorithms and they make clear what I would change when working on a real QC
+pipeline.
+
+\subsection{Start with the simplest evidence}
+
+A physical range check should run before a complicated model because it is
+cheap, deterministic and easy to explain. The same principle applies to
+obvious internal contradictions and missing-data checks. More expensive
+spatial or forecasting methods are most useful for values that survive the
+simple checks. This ordering saves computation and, more importantly, keeps
+clearly invalid values from contaminating later references.
+
+\subsection{Use different checks for different fault shapes}
+
+A spike, a frozen sensor and a slow drift are not the same statistical
+problem. A step rule is naturally suited to an abrupt jump. A persistence
+rule is naturally suited to a loss of movement. A neighbour comparison is
+better suited to a sustained offset or drift. The result table supports this
+view: the strongest system is the battery because its members fail in
+different ways. I would therefore select checks by the faults that matter,
+not by which method has the most sophisticated formula.
+
+\subsection{Treat the threshold as part of the model}
+
+It is tempting to describe the algorithm and leave the threshold in a
+configuration file. The experiment shows why that is incomplete. Changing
+the modified-z threshold from 3.5 to 30 changes the operational behaviour
+from complete spike detection with nuisance alarms to silence with missed
+spikes. The threshold therefore belongs in the method description together
+with the window, sampling rate and reference data used to choose it.
+
+\subsection{Measure reviewer workload, not only accuracy}
+
+A QC system does not end when a flag is produced. Someone may have to inspect
+the value, compare other sensors, write a comment or contact a technician.
+For that reason I prefer false alarms per day to a percentage that hides the
+operational scale. A false-alarm rate that looks small for one series can
+become hundreds of flags across a network. A useful evaluation should say
+both what faults are found and what attention the system consumes.
+
+\subsection{Keep the original value and the reason for the flag}
+
+The readings by Shafer and Campbell make provenance a central part of the
+architecture. An automated check should not silently replace a measurement
+with a corrected number or remove it from the archive. The raw value, the QC
+verdict, the check that produced it and any later human decision should be
+separable. This makes later reprocessing possible when thresholds or methods
+change, and it prevents the QC system from hiding scientifically interesting
+extremes.
+
+\subsection{Re-evaluate when the context changes}
+
+A threshold tuned for one sampling interval, sensor type or climate should
+not automatically be copied to another. The same is true for neighbours and
+forecast models. A new site may have different terrain, different natural
+variability or different instrument noise. The method can transfer while the
+parameter does not. I would therefore treat deployment at a new site as a
+small validation exercise rather than as a configuration copy.
+
+These rules are intentionally simple. They do not require a particular
+software package or statistical model. They describe how I would make the
+system understandable and auditable: simple checks first, several kinds of
+evidence, explicit thresholds, measured reviewer cost, preserved provenance,
+and local validation.
+
+
+\subsection*{What I take from each core reading}
+
+The five readings also give five practical lessons that are easy to separate.
+Grubbs shows the value of a formally defined statistical decision, but also
+how strongly such a decision depends on its assumptions. Iglewicz and
+Hoaglin show why robust centre and spread estimates are useful when a few
+bad observations can distort the reference. Shafer and colleagues show that
+quality control is an operational system made of checks, flags, maintenance
+and people, not a single equation. Campbell and colleagues make the
+fault-versus-anomaly distinction explicit and argue for preserving raw data
+and QC information. Leigh and colleagues show experimentally that method
+performance depends on fault type and that combinations are usually more
+useful than a single winner.
+
+Together these lessons explain the design used in my experiment: test the
+assumptions, make the reference explicit, document the threshold, compare by
+fault type, and keep the final verdict interpretable.
+
+% =====================================================================
+% 7. Conclusion
+% =====================================================================

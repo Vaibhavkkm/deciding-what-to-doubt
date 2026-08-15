@@ -1,0 +1,65 @@
+\section{Historian: where the ideas came from}
+\label{sec:history}
+
+The history of QC can be read as a change in what counts as a reference for
+``normal'' data.
+
+Early outlier work treated the problem as a statistical test. By the middle
+of the twentieth century, Grubbs collected practical procedures for deciding
+whether one or more observations were too extreme to belong to a normally
+distributed sample \citep{grubbs1969}. The attraction was clear: the method
+gave a named statistic, a significance level and a defensible rule.
+
+The weakness was also clear. Classical tests use the sample mean and standard
+deviation, both of which are affected by the very outliers they are meant to
+detect. Pearson and Chandra Sekar described the masking problem, where two
+similar outliers inflate the standard deviation enough to hide each other
+\citep{pearson1936}. Rosner later developed the generalised ESD procedure to
+handle several possible outliers without stopping at the first insignificant
+step \citep{rosner1983}.
+
+Robust statistics changed the reference. Instead of estimating the centre
+and spread with quantities that a few bad values can move strongly, robust
+methods use the median and the median absolute deviation (MAD). Iglewicz and
+Hoaglin turned that idea into a simple engineering rule: compute a modified
+z-score and flag large values, commonly using 3.5 as a screening threshold
+\citep{iglewicz1993}. This was designed for batches of observations, not for
+a short moving window over a correlated stream, which becomes important in
+Section~\ref{sec:experiment}.
+
+The next change was operational. The Oklahoma Mesonet made QC a system rather
+than a single test. Its design combined calibration, maintenance, automatic
+checks, graded flags and human review \citep{shafer2000}. The important idea
+was not a new equation. It was that reliable data quality comes from several
+independent kinds of evidence and a process for acting on the flags.
+
+Campbell and colleagues generalised this approach for streaming
+environmental sensors \citep{campbell2013}. They separate quality assurance
+(what is done before data collection) from quality control (what is done to
+the data afterwards), distinguish faults from real anomalies, and argue for
+preserving raw values together with QC flags.
+
+Leigh and colleagues then returned to explicit statistical comparison. On
+high-frequency water-quality data they compared rule-based, regression-based
+and feature-based methods and reported performance by fault type
+\citep{leigh2019}. Their result is important for this report: no method wins
+for every fault, so combinations are more useful than a search for one
+universal detector.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.93\textwidth]{fig_timeline.png}
+  \caption{A compact timeline of the line followed in this report. The five
+  core readings are marked in the labels.}
+  \label{fig:timeline}
+\end{figure}
+
+The historical pattern is therefore simple. The score used to measure
+surprise changed slowly. The reference for normality moved from theoretical
+distributions, to robust summaries of the data, to engineering knowledge,
+neighbouring stations and fitted models. The threshold remained the part
+most likely to be inherited without enough justification.
+
+% =====================================================================
+% 3. Technician
+% =====================================================================

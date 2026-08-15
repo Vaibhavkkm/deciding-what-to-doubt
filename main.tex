@@ -1,165 +1,174 @@
 % =====================================================================
-% Deciding What to Doubt
-% Reading report, Advanced Topics in Mathematical Modelling
+% Deciding What to Doubt - shortened submission version
+% Advanced Topics in Mathematical Modelling
 % University of Luxembourg, August 2026
-% Compile: pdflatex -> bibtex -> pdflatex -> pdflatex  (or latexmk)
+% Compile: latexmk -pdf main_short.tex
 % =====================================================================
-\documentclass[11pt,a4paper]{article}
+\documentclass[12pt,a4paper]{article}
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage{mathptmx}          % Times text and maths (vector fonts everywhere)
+\usepackage[sc]{mathpazo}
 \usepackage[scaled=0.92]{helvet}
 \usepackage{courier}
 \usepackage{textcomp}
 \usepackage{microtype}
-\usepackage[margin=2.5cm]{geometry}
+\usepackage[top=2.6cm,bottom=2.6cm,left=2.5cm,right=2.5cm]{geometry}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage[round]{natbib}
-\usepackage{xcolor}
-\usepackage{listings}
-\usepackage[font=small,labelfont={bf},skip=6pt]{caption}
+\usepackage[font=small,labelfont={bf},skip=5pt]{caption}
 \usepackage{setspace}
 \usepackage[hidelinks]{hyperref}
 
-\graphicspath{{figures/}}
-\linespread{1.13}
-\setlength{\headheight}{14pt}
-
-% ---- colours used only for code listings -----------------------------
-\definecolor{codekw}{HTML}{1c5cab}
-\definecolor{codecomment}{HTML}{898781}
-\definecolor{codestr}{HTML}{008300}
-\definecolor{codebg}{HTML}{fcfcfb}
-
-\lstdefinestyle{py}{
-  language=Python,
-  basicstyle=\ttfamily\footnotesize,
-  keywordstyle=\color{codekw}\bfseries,
-  commentstyle=\color{codecomment}\itshape,
-  stringstyle=\color{codestr},
-  showstringspaces=false,
-  numbers=left,
-  numberstyle=\tiny\color{codecomment},
-  numbersep=8pt,
-  breaklines=true,
-  breakatwhitespace=true,
-  frame=single,
-  rulecolor=\color{codecomment!40},
-  backgroundcolor=\color{codebg},
-  aboveskip=10pt,
-  belowskip=10pt,
-  captionpos=b
-}
+\graphicspath{{figures/}{./}}
+\linespread{1.05}
+\setlength{\parskip}{4pt plus 1pt minus 1pt}
+\setlength{\parindent}{1.3em}
+\setlength{\tabcolsep}{4pt}
 
 \newcommand{\work}[1]{\textit{#1}}
 
 \begin{document}
 
 % =====================================================================
-% Cover page
+% Title page
 % =====================================================================
 \begin{titlepage}
   \centering
-  {\large University of Luxembourg\par}
-  {\normalsize Faculty of Science, Technology and Medicine\par}
-  \vspace{0.4cm}
-  {\normalsize Master in Mathematics\par}
-  \vspace{2.6cm}
-  {\normalsize Reading report for the course\par}
-  {\large \textsc{Advanced Topics in Mathematical Modelling}\par}
-  \vspace{1.8cm}
-  {\LARGE\bfseries Deciding What to Doubt\par}
-  \vspace{0.5cm}
-  {\large The statistical lineage of automated quality control\\
-   for environmental sensor networks\par}
-  \vspace{2.8cm}
-  {\normalsize
-    \begin{tabular}{rl}
-      Author: & Vaibhav \textsc{Mangroliya} \\[2pt]
-      Academic supervisor: & Dr.\ Senthil Murugan \textsc{Nagarajan} \\[2pt]
-      Course responsible: & Dr.\ Jack S. \textsc{Hale} \\
-    \end{tabular}\par}
+  \vspace*{0.45cm}
+
+  \IfFileExists{uni_logo.png}{%
+    \includegraphics[width=0.27\textwidth]{uni_logo.png}}{%
+    \IfFileExists{figures/uni_logo.png}{%
+      \includegraphics[width=0.27\textwidth]{figures/uni_logo.png}}{%
+      \vspace*{2.3cm}}}
+
+  \vspace{0.8cm}
+  {\normalsize\textsc{Faculty of Science, Technology and Medicine}\par}
+
   \vfill
-  {\normalsize Luxembourg, August 2026\par}
+  \rule{0.84\textwidth}{0.4pt}\par
+  \vspace{0.75cm}
+  {\LARGE\bfseries Deciding What to Doubt\par}
+  \vspace{0.45cm}
+  {\large\itshape How automated quality control for environmental\\
+   sensor networks learned what to distrust\par}
+  \vspace{0.75cm}
+  \rule{0.84\textwidth}{0.4pt}\par
+
+  \vfill
+  {\normalsize Reading report submitted for the course\par}
+  \vspace{0.2cm}
+  {\normalsize\textsc{Advanced Topics in Mathematical Modelling}\par}
+  \vspace{0.45cm}
+  {\normalsize Master of Science in Mathematics\par}
+  \vspace{0.75cm}
+  {\normalsize Written alongside an internship at the Luxembourg Institute\\
+   of Science and Technology, ENVISION unit\par}
+
+  \vfill
+  \begin{minipage}[t]{0.47\textwidth}
+    \raggedright
+    {\itshape Author:}\par
+    Vaibhav Kailash MANGROLIYA\par
+    \vspace{0.15cm}
+    Matricule: 0246807154
+  \end{minipage}%
+  \hfill
+  \begin{minipage}[t]{0.47\textwidth}
+    \raggedleft
+    {\itshape Academic supervisor:}\par
+    Senthil Murugan NAGARAJAN\par
+    \vspace{0.3cm}
+    {\itshape Course responsible:}\par
+    Jack S. HALE
+  \end{minipage}
+
+  \vspace{1.0cm}
+  {\normalsize August 2026\par}
 \end{titlepage}
 
 % =====================================================================
-% Abstract and statements
+% Front matter - kept compact on purpose
 % =====================================================================
 \thispagestyle{empty}
-\section*{Abstract}
-Every automated quality control system for environmental sensor data answers
-the same question thousands of times a day: is this reading to be trusted?
-This report reads five works that shaped how that question is answered, from
-Grubbs' consolidation of classical outlier tests, through the robust
-reformulation of Iglewicz and Hoaglin, the first fully operational network
-quality assurance system at the Oklahoma Mesonet, and the streaming QA/QC
-framework of Campbell and colleagues, to the anomaly detection framework of
-Leigh and colleagues for in situ water sensors. Following the five-role
-format of the course, I trace where the ideas came from, restate the methods
-in one notation, reproduce their central behaviours in Python on a controlled
-synthetic benchmark, follow their influence to the current research frontier,
-and critique them. Two threads organise the whole story. First, every method
-in this lineage is a statistic plus a reference set plus a threshold, and
-what changed over 170 years is where the reference set comes from: theory,
-then history, then neighbouring sensors, then learned models. Second, the
-thresholds have always been the weakest joint. My experiments show that the
-textbook constant of the modified z-score does not transfer to autocorrelated
-high-frequency data, and that no threshold alone can buy both full detection
-and silence.
+\section*{Summary}
 
-\vspace{1.4cm}
-\section*{Statement on the use of AI tools}
-I prepared this report with the assistance of a large language model (Claude,
-Anthropic), used with the prior written permission of the course responsible.
-The choice of topic and reading list, the direction of the analysis, and the
-positions taken are my own. The numerical experiments in
-Section~\ref{sec:experimentalists} were designed around questions I brought
-from my thesis work, and I executed, checked and can defend every number,
-figure and line of code they produced. All bibliographic details were
-verified against the published sources, and citation statistics were taken
-from OpenAlex on 19 August 2026. I have read the full text and I take
-responsibility for it.
+Automated quality control (QC) decides whether a sensor reading should be
+trusted, flagged, or reviewed. This report studies five works that shaped
+that decision: Grubbs' classical outlier test, Iglewicz and Hoaglin's robust
+modified z-score, the Oklahoma Mesonet QC system of Shafer and colleagues,
+the general sensor-QC framework of Campbell and colleagues, and the
+model-based comparison of Leigh and colleagues.
 
-\vspace{1.4cm}
-\section*{Relation to the Master's thesis}
-My thesis describes the design, implementation and audit of an automated
-quality control pipeline for the environmental monitoring network of a
-Luxembourg research institute. This report deliberately does not describe
-that system. It reads the literature the system quietly stands on, and it is
-substantially different in aim, structure and content from the literature
-review contained in the thesis: the thesis review surveys what exists in
-order to position an implementation, while this report studies five works as
-objects in their own right, historically, technically, experimentally and
-critically.
+The report is organised around the five roles suggested by the course:
+Historian, Technician, Experimentalist, Futurist and Critic. The main idea is
+simple. Every QC method needs (1) a quantity that measures how unusual a
+reading is, (2) a reference for what ``normal'' looks like, and (3) a
+threshold that converts the score into a decision. The mathematics of the
+score changes less than the reference and the threshold.
+
+I test the main quantitative methods on a reproducible synthetic temperature
+series with known faults. The experiments show three practical results. A
+method can fail when its assumptions do not match time-series data; a single
+threshold cannot remove that mismatch; and a small battery of simple checks
+performs better than any one check alone. The report therefore argues for
+transparent combinations of checks, explicit threshold justification, and
+human review of flags rather than automatic deletion.
+
+\subsection*{Use of Generative AI}
+In accordance with the University of Luxembourg's AI guidelines, generative
+AI (Claude, Anthropic) was used for text improvement, proofreading,
+restructuring and iterative feedback. It was used as an editorial aid, not
+to generate the substantive analysis, experimental results, or conclusions
+from the bottom up. I have reviewed the report in full and can explain and
+justify the work.
+
+\subsection*{How this differs from my thesis}
+My thesis documents a quality-control pipeline that I extended and audited
+for an environmental monitoring network. This reading report instead studies
+the literature behind such checks and uses a separate synthetic benchmark to
+compare their behaviour. The aim, evidence and structure are therefore
+different from the thesis.
 
 \clearpage
-\pagenumbering{roman}
+\thispagestyle{empty}
+\section*{Acknowledgments}
+
+My thanks go first to my supervisor, \textbf{Dr. Senthil Murugan Nagarajan},
+for his supervision and support throughout my Master's thesis. The questions
+behind this report grew out of that broader work, especially the need to
+understand why particular quality-control methods and thresholds are used.
+
+I am grateful to \textbf{Dr. Jack S. Hale} for designing a course that asks
+a student to read deeply rather than broadly. The Historian, Technician,
+Experimentalist, Futurist and Critic roles provided a useful structure for
+turning five readings into one argument.
+
+I also thank the ENVISION unit at the Luxembourg Institute of Science and
+Technology for the internship context that motivated these questions, and
+the University of Luxembourg for the academic environment in which I could
+pursue them.
+
+\vspace{0.5cm}
 \begin{spacing}{0.96}
 \tableofcontents
 \end{spacing}
+
 \clearpage
 \pagenumbering{arabic}
-
 \input{sections/01-introduction}
-\input{sections/02-reading-list}
-\input{sections/03-historians}
-\input{sections/04-technicians}
-\input{sections/05-experimentalists}
-\input{sections/06-futurists}
-\input{sections/07-critics}
-\input{sections/08-synthesis}
-
-\clearpage
-\bibliographystyle{plainnat}
-\bibliography{references}
-
-\clearpage
-\appendix
-\input{sections/appendix}
+\input{sections/02-historian}
+\input{sections/03-technician}
+\input{sections/04-experimentalist}
+\input{sections/05-futurist}
+\input{sections/06-critic}
+\input{sections/07-practical-rules}
+\input{sections/08-conclusion}
+\input{sections/09-reproducibility}
+\input{sections/bibliography}
 
 \end{document}
