@@ -23,14 +23,20 @@ minute resolution, $N = 8640$ observations, composed of a diurnal harmonic of
 amplitude 5\,K around 12\,\textcelsius, a slowly wandering synoptic component
 of amplitude 3\,K, and autocorrelated sensor noise, an AR(1) process with
 coefficient 0.85 and innovation standard deviation 0.12\,K. Into the clean
-series I injected five fault classes with disjoint supports, chosen to match
-the taxonomy of \citet{campbell2013} and \citet{leigh2019}: fourteen isolated
+series I injected five fault classes, chosen to match the taxonomy of
+\citet{campbell2013} and \citet{leigh2019}: fourteen isolated
 spikes of 3 to 8\,K in either direction; a step of $+2.5$\,K lasting 36
 hours, the signature of a failed radiation shield; a six hour exact flatline,
 a frozen sensor repeating one value bit for bit; a six hour dithered
 flatline, the same fault with residual jitter of $\pm 0.02$\,K, a sensor
 mechanically stuck while its last digit still moves; and a linear calibration
-drift accumulating $+2.2$\,K over four days. Three neighbouring stations
+drift accumulating $+2.2$\,K over four days. Their supports are very nearly
+disjoint, but not exactly: one of the fourteen spikes, at sample 5793, lands
+inside the 36 hour step, under three hours after it begins, so that sample
+carries two labels and enters the recall of both classes. I report it rather
+than move the spike, because faults that arrive on top of other faults are
+ordinary in an operational archive, and a benchmark that quietly excludes
+them flatters every detector in the comparison. Three neighbouring stations
 share the regional weather but carry their own small local deviations,
 offsets and noise, and remain fault free. Figure~\ref{fig:series} shows the
 result.
@@ -240,7 +246,7 @@ of the current era rests on it.
 
 The benchmark is kind to every detector in it. Its clean process is
 stationary in a way no real month of weather is, its faults are crisp,
-disjoint and generously sized, there are no missing values, no fouling that
+nearly disjoint and generously sized, there are no missing values, no fouling that
 mimics real signals, no storms that mimic faults, and its neighbour stations
 agree more politely than real terrain ever allows. The absolute numbers
 above, 1.63 false alarms per day, 64\,\% recall, 0.018 agreement, are
