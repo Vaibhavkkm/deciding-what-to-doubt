@@ -15,6 +15,8 @@ the central behaviours of the methods in Python on a seeded synthetic
 benchmark, so every number and figure in the report is exactly reproducible
 from this repository.
 
+The compiled report is [`report.pdf`](report.pdf) (25 pages).
+
 ## Repository layout
 
 ```
@@ -25,6 +27,7 @@ references.bib     fuller reference list, kept from the long draft
 figures/           figures as PNG at 300 dpi (committed, and regenerable
                    from code/), plus the university logo
 code/              experiments.py, figures.py and their outputs
+report.pdf         the compiled report
 requirements.txt   Python dependencies for the experiments
 ```
 
